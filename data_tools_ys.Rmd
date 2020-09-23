@@ -29,7 +29,7 @@ interval to summarize node health indicators of interest
 ```{r}
 freq <- "1 hour"
 
-#not sure what this means?
+#for visualization
 longitude <- -81.73625912
 latitude <- 27.59905438
 ```
