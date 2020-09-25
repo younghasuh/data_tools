@@ -44,13 +44,14 @@ all_data <- load_data(infile) #starttime, tags, endtime=
 
 beep_data <- all_data[[1]]
 beep_data <- beep_data[complete.cases(beep_data), ]
-tags <- read.csv("../data/DATA-20200911T200454Z-001/DATA/nodes/Tags.csv", as.is=TRUE, na.strings=c("NA", ""), header=TRUE, skipNul = TRUE, colClasses=c("TagId"="character"))
+tags <- read.csv("../taglist.csv", as.is=TRUE, na.strings=c("NA", ""), header=TRUE, skipNul = TRUE, colClasses=c("TagId"="character"))
 beep_data <- beep_data[beep_data$TagId %in% tags$TagId,]
 health_data <- all_data[[2]]
 #health_data$timediff <- health_data$Time - health_data$RecordedAt
 gps_data <- all_data[[3]]
-
 ```
+
+
 
 
 
