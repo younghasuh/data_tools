@@ -17,6 +17,15 @@ source("functions/data_manager.R")
 source("functions/localization.R")
 ```
 
+# Data manager
+
+```{r}
+
+```
+
+
+
+
 Infile and outpath
 ```{r}
 infile <- "../allfiles" #all 3 file types I download from CTT (node health, beep, gps)
