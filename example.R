@@ -71,7 +71,7 @@ gps_data <- all_data[[3]]
 #my_node_data <- my_node_data[my_node_data$TagId %in% my_node_data$TagId,]
 
 #UNCOMMENT AND RUN THE export_data() FUNCTION below IF YOU WANT OUTPUT CSV FILES
-#export_data(infile, outpath, starttime=NULL, endtime=NULL, tags=NULL)
+export_data(infile, outpath, starttime=NULL, endtime=NULL, tags=NULL)
 
 #Alternatively, if you have a file already created that you'd like to work
 #with in the same format, you can always read.csv() into a data frame of the same name here
@@ -102,7 +102,7 @@ export_node_channel_plots(health_data,freq,outpath,4,2,1)
 nodes <- unique(health_data$NodeId)
 #produces a list of plots per node showing if/when time stamp on sending vs. receiving mismatches occur, and if there are NA values
 #you can index the list by the vector of nodes passed to it
-#mynodes <- node_plots(health_data,nodes)
+#mynodes <- node_plots(health_data,nodes,freq)
 #90649225 is min time diff to get to 2017
 #for instance mynodes[[1]] corresponds to the plots for nodes[1]
 
@@ -112,4 +112,4 @@ nodes <- unique(health_data$NodeId)
 
 #call the export_node_plots() function to output the plots looking for time stamp mismatches
 #the resulting plots will be in "outpath" named "nodes_<node>.png"
-export_node_plots(health_data,freq,outpath)
+export_node_plots(health_data,freq,outpath, 5,4,1)
