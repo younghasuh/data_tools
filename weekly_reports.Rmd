@@ -29,7 +29,7 @@ May take a hot second. Refresh github page to see if data was uploaded.
 
 # Code for analyzing data
 
-### Load up our functions into memory
+#### Load up our functions into memory
 ```{r load-functions, message = FALSE}
 source("functions/data_manager.R")
 source("functions/node_health.R")
@@ -37,16 +37,16 @@ library(readxl)
 ```
 
 
-### Set up 
+#### Set up 
 Infile needs to be updated based on data that has been downloaded from CTT account weekly. Set time accordingly.
 ```{r setting-up}
 infile <- "../data_tools/datafiles/Sep22-28/" 
 
 #This is where you want your output to go
-outpath <- "../plots/"
+outpath <- "../plots"
 
 #Set frequency
-freq <- "10 minutes" 
+freq <-"30 min"
 
 #Set time (example)
 start_time = as.POSIXct("2020-09-22 01:00:00", tz = "America/New_York")
@@ -93,7 +93,7 @@ gps_data <- all_data[[3]]
 #### Plot data
 This creates a unique ID for each combo of radio + node, summarizes node health variables for the input time interval and each unique combo of node x radio, and then expands the data frame to NA fill for missing time x ID combos based on your time interval chosen
 ```{r plots}
-plotting_data <- summarize_health_data(health_data, freq)
+plotting_data <- summarize_health_data(health_data[[1]], freq)
 summarized <- plotting_data[[1]]
 
 ids <- unique(summarized$ID)
@@ -107,6 +107,57 @@ radionode_plots <- node_channel_plots(health_data, freq)
 #2. Battery
 #3. number of check-ins
 #4. check-ins as scaled line overlay of scaled RSSI plot
+
+```
+
+## Node health
+For v2 nodes only
+```{r}
+health_df <- health_data[[1]]
+nodes <- unique(health_df$NodeId)
+#produces a list of plots per node showing if/when time stamp on sending vs. receiving mismatches occur, and if there are NA values
+#you can index the list by the vector of nodes passed to it
+
+mynodes <- node_plots(health_data,nodes,freq)
+mynodes[[1]]
+#90649225 is min time diff to get to 2017
+#for instance mynodes[[1]] corresponds to the plots for nodes[1]
+
+#PLOT INDICES
+#1. time mismatches (i.e. indicates when a GPS fix was likely lost)
+#2. smaller time delays
+
+#call the export_node_plots() function to output the plots looking for time stamp mismatches
+#the resulting plots will be in "outpath" named "nodes_<node>.png"
+export_node_plots(health_data, freq, outpath, 5,4,1)
+
+export_node_plots(health_data, freq,"../plots", 5,4,1)
+
+```
+
+
+## Localization
+
+#### Load libraries and functions
+```{r load-local-functions, message = FALSE}
+library(raster)
+library(sp)
+library(rgdal)
+library(sf)
+library(ggplot2)
+library(geosphere)
+source("functions/data_manager.R")
+source("functions/localization.R")
+```
+
+#### Set up
+```{r}
+beep_data <- all_data[[1]][[1]]
+
+nodes <- read.csv(paste(infile,"../data_tools/nodes.csv",sep="/"), as.is=TRUE, na.strings=c("NA", "")) #uppercase node letters
+nodes <- node_file(all_data[[2]][[1]])
+
+beep_data <- beep_data[beep_data$NodeId %in% toupper(nodes$NodeId),] #c("326317", "326584", "3282fa", "3285ae", "3288f4")
 
 ```
 
