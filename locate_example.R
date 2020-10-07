@@ -1,4 +1,3 @@
-rm(list=ls())
 library(raster)
 library(sp)
 library(rgdal)
@@ -9,10 +8,10 @@ source("functions/data_manager.R")
 source("functions/localization.R")
 
 ###EDIT THESE VALUES
-infile <- "../data/DATA-20200911T200454Z-001"
+infile <- "../data/ABS_TagTest1/data"
 outpath <- "../output/"
 
-tags <- read.csv(paste(infile,"DATA/nodes/Tags.csv",sep="/"), as.is=TRUE, na.strings=c("NA", "")) #uppercase node letters
+tags <- read.csv("../data/ABS_TagTest1/supp/tags-to-analyze.csv", as.is=TRUE, na.strings=c("NA", "")) #uppercase node letters
 
 all_data <- load_data(infile)
 beep_data <- all_data[[1]][[1]]
@@ -20,9 +19,11 @@ beep_data <- all_data[[1]][[1]]
 
 #nodes <- node_file(all_data[[2]][[1]])
 ###looking for a file with the column names NodeId, lat, lng IN THAT ORDER
-nodes <- read.csv(paste(infile,"DATA/nodes/Nodes1.csv",sep="/"), as.is=TRUE, na.strings=c("NA", "")) #uppercase node letters
+nodes <- read.csv("../data/ABS_TagTest1/supp/rh-node-locations-2020-10-05.csv", as.is=TRUE, na.strings=c("NA", ""), strip.white=TRUE) #uppercase node letters
+nodes <- nodes[,c("NodeId", "lat", "lng")]
+nodes$NodeId <- toupper(nodes$NodeId)
 
-beep_data <- beep_data[beep_data$NodeId %in% toupper(nodes$NodeId),] #c("326317", "326584", "3282fa", "3285ae", "3288f4")
+beep_data <- beep_data[beep_data$NodeId %in% nodes$NodeId,] #c("326317", "326584", "3282fa", "3285ae", "3288f4")
 
 ###UNCOMMENT THESE AND FILL WITH YOUR DESIRED VALUES IF YOU WANT YOUR OUTPUT AS ONLY A SUBSET OF THE DATA
 #channel <- a vector of RadioId value(s)
@@ -34,18 +35,18 @@ beep_data <- beep_data[beep_data$NodeId %in% toupper(nodes$NodeId),] #c("326317"
 tag_id <- tags$TagId
 #
 #channel <- c(2)
-freq <- c("5 min", "10 min")
+freq <- c("3 min", "10 min")
 
 max_nodes <- 0 #how many nodes should be used in the localization calculation?
-df <- merge_df(beep_data, nodes)
+df <- merge_df(beep_data, nodes, tag_id)
 
-resampled <- advanced_resampled_stats(beep_data, nodes, freq[1])
+resampled <- advanced_resampled_stats(beep_data, nodes, freq[1], tag_id)
 p3 = ggplot(data=resampled, aes(x=freq, y=max_rssi, group=NodeId, colour=NodeId)) +
   geom_line()
 
-locations <- weighted_average(freq[1], beep_data, nodes)
+locations <- weighted_average(freq[1], beep_data, nodes, 0, tag_id)
 #multi_freq <- lapply(freq, weighted_average, beeps=beep_data, node=nodes) 
-#export_locs(freq, beep_data, nodes, outpath)
+#export_locs(freq, beep_data, nodes, tag_id, outpath)
 
 locations$ID <- paste(locations$TagId, locations$freq, sep="_")
 locations <- locations[!duplicated(locations$ID),]
@@ -76,6 +77,6 @@ my_nodes <- st_as_sf(nodes_spatial)
 ggplot() + 
   #geom_point(data=my_locs, aes(x=long,y=lat))
   #  ggmap(ph_basemap) +
-  #geom_sf(data = locs, aes(colour=TagId), inherit.aes = FALSE) + 
+  geom_sf(data = locs, aes(colour=TagId), inherit.aes = FALSE) + 
   geom_sf(data = my_nodes) +
   geom_text(data = nodes, aes(x=lng, y=lat, label = NodeId), size = 5)
