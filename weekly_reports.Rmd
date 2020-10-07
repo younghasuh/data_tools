@@ -154,8 +154,8 @@ source("functions/localization.R")
 ```{r}
 beep_data <- all_data[[1]][[1]]
 
-nodes <- read.csv(paste(infile,"../data_tools/nodes.csv",sep="/"), as.is=TRUE, na.strings=c("NA", "")) #uppercase node letters
-nodes <- node_file(all_data[[2]][[1]])
+nodes <- read.csv("../data_tools/nodes.csv") #uppercase node letters
+
 
 beep_data <- beep_data[beep_data$NodeId %in% toupper(nodes$NodeId),] #c("326317", "326584", "3282fa", "3285ae", "3288f4")
 
