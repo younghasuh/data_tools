@@ -41,7 +41,7 @@ library(readxl)
 
 #### Set up 
 Infile needs to be updated based on data that has been downloaded from CTT account weekly. Set time accordingly.
-```{r setting-up}
+```{r setting-up, message=FALSE}
 infile <- "../data_tools/datafiles/Sep22-28/" 
 
 #This is where you want your output to go
