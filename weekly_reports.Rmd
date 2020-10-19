@@ -13,6 +13,8 @@ Download all data files (GPS, node health, beep data) from https://account.cellt
 
 Always start the session with `git pull upstream master` in Tools > Shell to pull any chances made upstream (CTT data_tools)
 
+FYI: API token ae45d3ab909039f9c7f48d51c1888a9864d77388ba40b28a3bf2db5c9fa18597
+
 # Add weekly raw data
 
 Data will need to be downloaded from the CTT account. *Need to figure out how to do this more easily because clicking download 150 x 3 times is not fun*
@@ -100,6 +102,7 @@ ids <- unique(summarized$ID)
 
 #this creates a nested list of diagnostic plots for each combo of node and radio ID. You can index the list by the vector of node x ID combos passed to it
 radionode_plots <- node_channel_plots(health_data, freq)
+
 #for instance radionode_plots[[1]] corresponds to the plots for ids[1]
 
 #PLOT INDICES
