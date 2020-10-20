@@ -1,0 +1,82 @@
+---
+title: "Untitled"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+Load libraries
+```{r echo=FALSE}
+library(tidyverse)
+library(lubridate)
+```
+
+## Load data
+
+Load tag data and set variables
+```{r echo=FALSE}
+oct19 <- read.csv("../data_tools/datafiles/station_beep_merged_oct19.csv" )
+oct19$time <- as.POSIXct(oct19$Time ,format="%m/%d/%Y %H:%M", tz = "UTC")
+oct19$time_est <- with_tz(oct19$time, "EST") #change from UTC to EST
+
+# Filter to time points after Oct 17, which is the start of data I downloaded
+oct <- oct19 %>% 
+  filter(time_est > '2020-10-17 00:00:00')
+```
+
+
+Load node info
+```{r echo=FALSE}
+nodes <- read.csv("nodes.csv")
+```
+
+## Data wrangling 
+
+Use tidyverse to manipulate data. 
+
+```{r}
+# Need to convert to upper case to left join with the node data
+oct$NodeId <- toupper(oct$NodeId)
+table(oct$NodeId) # check if it worked
+
+# Add node numerical ID
+oct <- oct %>% 
+  left_join(nodes, by = "NodeId")
+```
+
+
+## Look for rows containing specific tag IDs
+
+Change accordingly
+```{r}
+# Check list of tags detected
+table(oct$TagId)
+
+# set tags
+tag1 <- "61342D4C" # -QGA
+tag2 <- "342A3478" # -BBX
+```
+
+Look for these specific ones
+```{r}
+# Tag 1
+
+tag1data <- oct %>% 
+  filter(TagId == tag1) %>% 
+  group_by(NodeId) %>% 
+  arrange(NodeId, -TagRSSI) %>% 
+  select(NodeId, id, TagRSSI, time_est)
+
+View(tag1data)
+
+
+# Tag 2
+tag2data <- oct %>% 
+  filter(TagId == tag2) %>% 
+  group_by(NodeId) %>% 
+  arrange(NodeId, -TagRSSI) %>% 
+  select(NodeId, id, TagRSSI, time_est)
+
+View(tag2data)
+```
+
