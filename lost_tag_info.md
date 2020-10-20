@@ -1,8 +1,15 @@
 Tracking specific tags
 ================
 Young Ha Suh
+10/19/2020
 
 ### Load libraries
+
+``` r
+library(tidyverse)
+library(knitr)
+library(lubridate)
+```
 
 <br>
 
@@ -69,6 +76,7 @@ tag1data <- oct %>%
   group_by(NodeId) %>% 
   mutate(timeofday = strftime(time_est, format="%H:%M:%S")) %>% 
   arrange(NodeId, -TagRSSI, timeofday) %>% 
+  #filter(TagRSSI > -110) %>%    set if there are too many rows
   select(NodeId, id, TagRSSI, time_est, timeofday)
 
 oct %>% 

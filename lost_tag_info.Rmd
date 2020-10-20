@@ -1,13 +1,14 @@
 ---
 title: "Tracking specific tags"
-author: "Young Ha Suh"
+author: "Young Ha Suh"   
+date: "10/19/2020"
 output: github_document
 editor_options: 
   chunk_output_type: console
 ---
 
 ### Load libraries
-```{r echo=FALSE, message=FALSE}
+```{r message=FALSE}
 library(tidyverse)
 library(knitr)
 library(lubridate)
@@ -73,6 +74,7 @@ tag1data <- oct %>%
   group_by(NodeId) %>% 
   mutate(timeofday = strftime(time_est, format="%H:%M:%S")) %>% 
   arrange(NodeId, -TagRSSI, timeofday) %>% 
+  #filter(TagRSSI > -110) %>%    set if there are too many rows
   select(NodeId, id, TagRSSI, time_est, timeofday)
 
 oct %>% 
