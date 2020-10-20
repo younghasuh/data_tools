@@ -67,11 +67,13 @@ Look for these specific ones
 ```{r}
 # Tag 1
 
+
 tag1data <- oct %>% 
   filter(TagId == tag1) %>% 
   group_by(NodeId) %>% 
-  arrange(NodeId, -TagRSSI) %>% 
-  select(NodeId, id, TagRSSI, time_est)
+  mutate(timeofday = strftime(time_est, format="%H:%M:%S")) %>% 
+  arrange(NodeId, -TagRSSI, timeofday) %>% 
+  select(NodeId, id, TagRSSI, time_est, timeofday)
 
 tag1data
 
@@ -80,8 +82,9 @@ tag1data
 tag2data <- oct %>% 
   filter(TagId == tag2) %>% 
   group_by(NodeId) %>% 
-  arrange(NodeId, -TagRSSI) %>% 
-  select(NodeId, id, TagRSSI, time_est)
+  mutate(timeofday = strftime(time_est, format="%H:%M:%S")) %>% 
+  arrange(NodeId, -TagRSSI, timeofday) %>% 
+  select(NodeId, id, TagRSSI, time_est, timeofday)
 
 tag2data
 ```
