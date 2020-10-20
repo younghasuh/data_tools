@@ -1,20 +1,23 @@
 ---
-title: "Untitled"
-output: html_document
+title: "Tracking specific tags"
+author: "Young Ha Suh"
+output: github_document
 editor_options: 
   chunk_output_type: console
 ---
 
-Load libraries
-```{r echo=FALSE}
+### Load libraries
+```{r echo=FALSE, message=FALSE}
 library(tidyverse)
 library(lubridate)
 ```
 
-## Load data
+<br>
+
+### Load data
 
 Load tag data and set variables
-```{r echo=FALSE}
+```{r}
 oct19 <- read.csv("../data_tools/datafiles/station_beep_merged_oct19.csv" )
 oct19$time <- as.POSIXct(oct19$Time ,format="%m/%d/%Y %H:%M", tz = "UTC")
 oct19$time_est <- with_tz(oct19$time, "EST") #change from UTC to EST
@@ -26,31 +29,34 @@ oct <- oct19 %>%
 
 
 Load node info
-```{r echo=FALSE}
+```{r}
 nodes <- read.csv("nodes.csv")
 ```
 
-## Data wrangling 
+<br>
+
+### Data wrangling 
 
 Use tidyverse to manipulate data. 
 
-```{r}
+```{r message = FALSE}
 # Need to convert to upper case to left join with the node data
 oct$NodeId <- toupper(oct$NodeId)
-table(oct$NodeId) # check if it worked
+#table(oct$NodeId) # check if it worked
 
 # Add node numerical ID
 oct <- oct %>% 
   left_join(nodes, by = "NodeId")
 ```
 
+<br>
 
-## Look for rows containing specific tag IDs
+### Look for rows containing specific tag IDs
 
 Change accordingly
 ```{r}
 # Check list of tags detected
-table(oct$TagId)
+# table(oct$TagId)
 
 # set tags
 tag1 <- "61342D4C" # -QGA
@@ -67,7 +73,7 @@ tag1data <- oct %>%
   arrange(NodeId, -TagRSSI) %>% 
   select(NodeId, id, TagRSSI, time_est)
 
-View(tag1data)
+tag1data
 
 
 # Tag 2
@@ -77,6 +83,6 @@ tag2data <- oct %>%
   arrange(NodeId, -TagRSSI) %>% 
   select(NodeId, id, TagRSSI, time_est)
 
-View(tag2data)
+tag2data
 ```
 
