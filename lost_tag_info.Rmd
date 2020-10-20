@@ -9,6 +9,7 @@ editor_options:
 ### Load libraries
 ```{r echo=FALSE, message=FALSE}
 library(tidyverse)
+library(knitr)
 library(lubridate)
 ```
 
@@ -64,10 +65,9 @@ tag2 <- "342A3478" # -BBX
 ```
 
 Look for these specific ones
+
+* Tag 1
 ```{r}
-# Tag 1
-
-
 tag1data <- oct %>% 
   filter(TagId == tag1) %>% 
   group_by(NodeId) %>% 
@@ -75,10 +75,22 @@ tag1data <- oct %>%
   arrange(NodeId, -TagRSSI, timeofday) %>% 
   select(NodeId, id, TagRSSI, time_est, timeofday)
 
-tag1data
+oct %>% 
+  filter(TagId == tag1) %>% 
+  group_by(NodeId) %>% 
+  mutate(timeofday = strftime(time_est, format="%H:%M:%S")) %>% 
+  arrange(NodeId, -TagRSSI, timeofday) %>% 
+  select(NodeId, id, TagRSSI, time_est, timeofday) %>% 
+  kable()
 
 
-# Tag 2
+View(tag1data)
+```
+
+<br> 
+
+* Tag 2
+```{r}
 tag2data <- oct %>% 
   filter(TagId == tag2) %>% 
   group_by(NodeId) %>% 
@@ -86,6 +98,14 @@ tag2data <- oct %>%
   arrange(NodeId, -TagRSSI, timeofday) %>% 
   select(NodeId, id, TagRSSI, time_est, timeofday)
 
-tag2data
+oct %>% 
+  filter(TagId == tag2) %>% 
+  group_by(NodeId) %>% 
+  mutate(timeofday = strftime(time_est, format="%H:%M:%S")) %>% 
+  arrange(NodeId, -TagRSSI, timeofday) %>% 
+  select(NodeId, id, TagRSSI, time_est, timeofday) %>% 
+  kable()
+
+View(tag2data)
 ```
 
