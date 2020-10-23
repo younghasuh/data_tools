@@ -1,6 +1,6 @@
 ---
 title: "Tracking specific tags"
-author: "Young Ha Suh" "is the best!!"  
+author: "Young Ha Suh"
 date: "10/19/2020"
 output: github_document
 editor_options: 
@@ -48,7 +48,7 @@ oct <- oct19 %>%
 
 Load node info
 ```{r}
-nodes <- read.csv("nodes.csv")
+node_list <- read.csv("nodes.csv")
 ```
 
 | Variable  | Description  |
@@ -76,7 +76,7 @@ oct$NodeId <- toupper(oct$NodeId)
 
 # Add node numerical ID
 oct <- oct %>% 
-  left_join(nodes, by = "NodeId")
+  left_join(node_list, by = "NodeId")
 ```
 
 <br>
@@ -103,14 +103,14 @@ tag1data <- oct %>%
   mutate(timeofday = strftime(time_est, format="%H:%M:%S", tz="EST")) %>% 
   arrange(NodeId, timeofday, -TagRSSI) %>% 
   #filter(TagRSSI > -110) %>%    set if there are too many rows
-  select(NodeId, id, TagRSSI, time_est, timeofday)
+  select(NodeId, id, TagRSSI, time_est, timeofday, Validated)
 
 oct %>% 
   filter(TagId == tag1) %>% 
   group_by(NodeId) %>% 
   mutate(timeofday = strftime(time_est, format="%H:%M:%S", tz="EST")) %>% 
   arrange(NodeId, timeofday, -TagRSSI) %>% 
-  select(NodeId, id, TagRSSI, time_est, timeofday) %>% 
+  select(NodeId, id, TagRSSI, time_est, timeofday, Validated) %>% 
   kable()
 
 
@@ -133,7 +133,7 @@ oct %>%
   group_by(NodeId) %>% 
   mutate(timeofday = strftime(time_est, format="%H:%M:%S", tz="EST")) %>% 
   arrange(NodeId, timeofday, -TagRSSI) %>% 
-  select(NodeId, id, TagRSSI, time_est, timeofday) %>% 
+  select(NodeId, id, TagRSSI, time_est, timeofday, Validated) %>% 
   kable()
 
 View(tag2data)
