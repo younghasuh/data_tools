@@ -8,7 +8,7 @@ editor_options:
 ---
 
 ### Load libraries
-```{r message=FALSE}
+```{r message=FALSE, warning=FALSE}
 library(tidyverse)
 library(knitr)
 library(lubridate)

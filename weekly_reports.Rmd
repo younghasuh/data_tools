@@ -36,8 +36,10 @@ May take a hot second. Refresh github page to see if data was uploaded.
 source("functions/data_manager.R")
 source("functions/node_health.R")
 library(readxl)
+library(tidyverse)
 ```
 
+<br>
 
 #### Set up 
 Infile needs to be updated based on data that has been downloaded from CTT account weekly. Set time accordingly.
@@ -45,7 +47,7 @@ Infile needs to be updated based on data that has been downloaded from CTT accou
 infile <- "../data_tools/datafiles/Sep22-28/" 
 
 #This is where you want your output to go
-outpath <- "../data_tools/plots"
+outpath <- "../data_tools/plots/"
 
 #Set frequency
 freq_node <-"30 min"
@@ -59,18 +61,18 @@ end_time = as.POSIXct("2020-09-28 20:00:00", tz = "America/New_York")
 Get a vector of tag list. Download from Nest Matrix use following. The only part that needs to be edited before getting loaded here is removing the space between Tag and ID before importing it.
 ```{r list-of-tags}
 #Extract list of tags
-list <- read_excel("tags.xlsx")
+taglist <- read_excel("tags.xlsx")
 
 #create a left function in r
 left = function (string,char) {
     substr(string,1,char)
 }
-list$tagid <- left(list$TagID, 8) #only the first 8 characters are read as tag ID
+taglist$tagid <- left(taglist$TagID, 8) #only the first 8 characters are read as tag ID
 
 #list will serve as a reference to jayID - tagID
 
 #Extract tags as vector
-tags <- as.vector(list$tagid)
+taglist_v <- as.vector(list$tagid)
 
 #Subset tags of interest if needed
 #subtags <- c("33550752", "3334551E")
@@ -91,6 +93,7 @@ health_data <- all_data[[2]]
 gps_data <- all_data[[3]]
 ```
 
+<br>
 
 #### Plot data
 This creates a unique ID for each combo of radio + node, summarizes node health variables for the input time interval and each unique combo of node x radio, and then expands the data frame to NA fill for missing time x ID combos based on your time interval chosen
@@ -128,16 +131,20 @@ export_node_channel_plots(health=health_data,freq=freq_node,out_path=outpath,x=4
 
 ```
 
+<br>
+
 ## Node health
 For v2 nodes only
+
+Using `example.R`
 ```{r}
 health_df <- health_data[[1]]
-nodes_list <- unique(health_df$NodeId)
+nodes_health <- unique(health_df$NodeId)
 #produces a list of plots per node showing if/when time stamp on sending vs. receiving mismatches occur, and if there are NA values
 #you can index the list by the vector of nodes passed to it
 
-mynodes <- node_plots(health_data, nodes_list, freq_node)
-mynodes[[1]]
+nodes <- node_plots(health_data, nodes_health, freq_node)
+nodes[[1]]
 #90649225 is min time diff to get to 2017
 #for instance mynodes[[1]] corresponds to the plots for nodes[1]
 
@@ -148,10 +155,31 @@ mynodes[[1]]
 #call the export_node_plots() function to output the plots looking for time stamp mismatches
 #the resulting plots will be in "outpath" named "nodes_<node>.png"
 tides = FALSE
-export_node_plots(health = health_data, freq = freq_node, out_path = "/plots", x = 5,y = 4, z = 1)
-
-
+export_node_plots(health = health_data, freq = freq_node, out_path = "../data_tools/plots/", x = 5,y = 4, z = 1)
 ```
+
+<br>
+
+#### Create table to quantitatively detect problem nodes
+
+```{r}
+probnodes <- health_df %>% 
+   group_by(NodeId, RadioId) %>%
+   filter(Battery < 3.5) %>% 
+   select(NodeId, RadioId, Time, NodeRSSI, Battery, Latitude, Longitude)
+   
+View(probnodes)
+
+# create table with `kable`
+#health_df %>% 
+#   group_by(NodeId, RadioId) %>%
+#   filter(Battery < 3.5) %>% 
+#   select(NodeId, RadioId, Time, NodeRSSI, Battery, Latitude, Longitude) %>% 
+#   kable()
+```
+
+
+
 
 
 # Location estimates for Archbold Florida scrub-jays
@@ -170,3 +198,95 @@ library(readxl)
 source("functions/data_manager.R")
 source("functions/localization.R")
 ```
+
+### Run following
+
+Compare variable names to make sure they match
+
+```{r}
+# Load beep data
+beep_data_loc <- all_data[[1]][[1]]
+# if you want a time criteria, beep_data <- beep_data[beep_data$Time > as.POSIXct("2020-08-10"),]
+
+
+# Load node data
+###looking for a file with the column names NodeId, lat, lng IN THAT ORDER
+nodes <- node_file(all_data[[2]][[1]])
+nodes <- nodes[,c("NodeId", "lat", "lng")]
+nodes$NodeId <- toupper(nodes$NodeId)
+
+beep_data_loc_all <- beep_data[beep_data$NodeId %in% nodes$NodeId,]  #n = 3295710  
+
+## Use node data from our list 
+## in case there are any "ghost" nodes in the all_data set
+abs_nodes <- read.csv("nodes.csv", as.is=TRUE, na.strings=c("NA", ""), strip.white=TRUE)
+abs_nodes <- abs_nodes[,c("NodeId", "lat", "lng")]
+abs_nodes$NodeId <- toupper(abs_nodes$NodeId)
+
+beep_data_loc_abs <- beep_data[beep_data$NodeId %in% abs_nodes$NodeId,]  #n = 2341888
+
+
+###UNCOMMENT THESE AND FILL WITH YOUR DESIRED VALUES IF YOU WANT YOUR OUTPUT AS ONLY A SUBSET OF THE DATA
+#channel <- a vector of RadioId value(s)
+#tag_id <- a vector of TagId value(s)
+#n_tags <- how many tags go into the "top tags"
+#freq <- The interval of the added datetime variable. Any character string that would be accepted by seq.Date or seq.POSIXt
+
+#EXAMPLE POSSIBLE VALUES
+
+
+tag_id <- taglist$tagid
+#channel <- c(2)
+freq <- c("2 min", "10 min")
+
+max_nodes <- 0 #how many nodes should be used in the localization calculation?
+df <- merge_df(beep_data, nodes, tag_id)
+
+resampled <- advanced_resampled_stats(beep_data, nodes, freq[1], tag_id)
+p3 = ggplot(data=resampled, aes(x=freq, y=TagRSSI_max, group=NodeId, colour=NodeId)) +
+  geom_line()
+
+p3
+
+locations <- weighted_average(freq[1], beep_data, nodes, 0, tag_id)
+#multi_freq <- lapply(freq, weighted_average, beeps=beep_data, node=nodes) 
+#export_locs(freq, beep_data, nodes, tag_id, outpath)
+
+n <- 2 #this is an example of filtering out locations based on a minimum number of nodes
+locations <- locations[locations$unique_nodes > n,]
+
+locations$ID <- paste(locations$TagId, locations$freq, sep="_")
+locations <- locations[!duplicated(locations$ID),]
+locations <- cbind(locations, locations@coords)
+
+time <- "1 day"
+move <- as.data.table(locations)[, .(Lat = mean(avg_y), Lon = mean(avg_x), std_lat = sd(avg_y), std_lon = sd(avg_x), .N), by = .(cut(freq, time),TagId)] #V = mean(SolarVolts), , 
+move$lowlat <- move$Lat - move$std_lat
+move$uplat <- move$Lat + move$std_lat
+move$lowlon <- move$Lon - move$std_lon
+move$uplon <- move$Lon + move$std_lon
+move$d <- distVincentyEllipsoid(cbind(move$lowlon, move$lowlat), cbind(move$uplon, move$uplat))
+move$d <- (move$d)/1000
+
+nodes_spatial <- nodes
+coordinates(nodes_spatial) <- 3:2
+crs(nodes_spatial) <- CRS("+proj=longlat +datum=WGS84") 
+
+#boulder_df <- locations[,c("TagId","avg_x","avg_y")]
+#coordinates(boulder_df) <- 2:3
+#utm <- CRS(paste0("+proj=utm +zone=", locations$zone[1], "+datum=WGS84"))
+#crs(boulder_df) <- utm
+#boulder_df_geog <- spTransform(locations, proj4string(nodes_spatial))
+my_locs <- locations[,1]
+locs <- st_as_sf(my_locs)
+my_nodes <- st_as_sf(nodes_spatial)
+
+ggplot() + 
+  #geom_point(data=my_locs, aes(x=long,y=lat))
+  #  ggmap(ph_basemap) +
+  geom_sf(data = locs, aes(colour=TagId), inherit.aes = FALSE) + 
+  geom_sf(data = my_nodes) +
+  geom_text(data = nodes, aes(x=lng, y=lat, label = NodeId), size = 5)
+
+```
+

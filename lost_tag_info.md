@@ -7,17 +7,7 @@ Young Ha Suh
 
 ``` r
 library(tidyverse)
-```
-
-    ## Warning: package 'readr' was built under R version 4.0.3
-
-``` r
 library(knitr)
-```
-
-    ## Warning: package 'knitr' was built under R version 4.0.3
-
-``` r
 library(lubridate)
 ```
 
