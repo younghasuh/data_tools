@@ -13,6 +13,8 @@ Download all data files (GPS, node health, beep data) from https://account.cellt
 
 Always start the session with `git pull upstream master` in Tools > Shell to pull any chances made upstream (CTT data_tools)
 
+If you have to commit multiple files at once `git add -A && git commit -m 'staging all files'`: this will select ALL files in the Git tab. 
+
 FYI: API token ae45d3ab909039f9c7f48d51c1888a9864d77388ba40b28a3bf2db5c9fa18597
 
 # Add weekly raw data
@@ -37,6 +39,7 @@ source("functions/data_manager.R")
 source("functions/node_health.R")
 library(readxl)
 library(tidyverse)
+library(stringr)
 ```
 
 <br>
@@ -63,16 +66,13 @@ Get a vector of tag list. Download from Nest Matrix use following. The only part
 #Extract list of tags
 taglist <- read_excel("tags.xlsx")
 
-#create a left function in r
-left = function (string,char) {
-    substr(string,1,char)
-}
-taglist$tagid <- left(taglist$TagID, 8) #only the first 8 characters are read as tag ID
+# extract left 8 characters of the tags
+taglist$tagid <- str_sub(taglist$TagID, 1, 8) #only the first 8 characters are read as tag ID
 
 #list will serve as a reference to jayID - tagID
 
 #Extract tags as vector
-taglist_v <- as.vector(list$tagid)
+#taglist_v <- as.vector(list$tagid)
 
 #Subset tags of interest if needed
 #subtags <- c("33550752", "3334551E")
