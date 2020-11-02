@@ -37,7 +37,7 @@ load_data <- function(directory_name=NULL, starttime=NULL, endtime=NULL, tags=NU
       })
       
       if(is.data.frame(df)) {
-        v <- ifelse(any(grepl("T",df[,which(time_cols %in% colnames(df))])), 1, 2)
+        v <- ifelse(any(grepl("T",df[,1])), 1, 2)
         if (!is.null(z)) {v <- z}
         print(v)
         if (y=="beep" & v < 2) {
@@ -55,8 +55,31 @@ load_data <- function(directory_name=NULL, starttime=NULL, endtime=NULL, tags=NU
         }
         
         df <- df[which(indx == correct),]
-        df <- df[-which(row.names(df)=="NA"),]
+        if(any(row.names(df) == "NA")) {df <- df[-which(row.names(df)=="NA"),]}
         df <- df[,colnames(df) %in% known]
+      }
+      
+      Correct_Colnames <- function(df) {
+        
+        delete.columns <- grep("(^X$)|(^X\\.)(\\d+)($)", colnames(df), perl=T)
+        
+        if (length(delete.columns) > 0) {
+          
+          rowval <- gsub("^X", "",  colnames(df))
+          rowval <- gsub("^\\.", "-",  rowval)
+          rowval[3] <- as.integer(rowval[3])
+          rowval[4] <- as.integer(rowval[4])
+          rowval[6] <- as.numeric(rowval[6])
+          rowval[7] <- as.integer(rowval[7])
+          
+          colnames(df) <- c("Time", "TagId", "BitErr", "TagRSSI", "NodeId", "NodeFreq", "RadioId")
+          names(rowval) <- colnames(df)
+          df <- rbind(df, rowval)
+          
+          #X might be replaced by different characters, instead of being deleted
+        }
+        
+        return(df)
       }
       
       tryCatch({
@@ -85,7 +108,10 @@ load_data <- function(directory_name=NULL, starttime=NULL, endtime=NULL, tags=NU
           # error handler picks up where error was generated, in Bob's script it breaks if header is missing
           print(paste("error merging file:",i, err))
         })
-      df$v <- v
+      
+      if(exists("v")) {
+        df$v <- v
+      } else {v <- NULL}
 
     #df <- df[which(ncol(df) == correctn),] how to check to see if number of fields in each row is the same?
     #else {df <- NULL}
