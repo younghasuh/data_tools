@@ -46,8 +46,10 @@ library(stringr)
 
 #### Set up 
 Infile needs to be updated based on data that has been downloaded from CTT account weekly. Set time accordingly.
+
+Load data from `datafiles` 
 ```{r setting-up, message=FALSE}
-infile <- "../data_tools/datafiles/Sep22-28/" 
+infile_oct27 <- "../data_tools/datafiles/Oct27-Nov2/" 
 
 #This is where you want your output to go
 outpath <- "../data_tools/plots/"
@@ -94,6 +96,7 @@ gps_data <- all_data[[3]]
 ```
 
 <br>
+
 
 #### Plot data
 This creates a unique ID for each combo of radio + node, summarizes node health variables for the input time interval and each unique combo of node x radio, and then expands the data frame to NA fill for missing time x ID combos based on your time interval chosen
