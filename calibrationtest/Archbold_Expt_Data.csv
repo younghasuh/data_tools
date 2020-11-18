@@ -1,0 +1,63 @@
+Date,NodeID,PlatformID,Height,Rotation,Start Time,End Time,Comments
+10 Dec,4C6,1,ground,horizontal,10:01,10:16,
+10 Dec,4C6,2,ground,horizontal,10:01,10:16,
+10 Dec,4C6,1,medium,horizontal,10:17,10:32,
+10 Dec,4C6,2,medium,horizontal,10:17,10:32,
+10 Dec,4C6,1,high,horizontal,11:42,11:57,
+10 Dec,4C6,2,high,horizontal,11:42,11:57,
+10 Dec,4C6,1,high,vertical,12:00,12:19,"was also up 11:03-11:14, fell off at 11:14"
+10 Dec,4C6,2,high,vertical,11:03,11:18,
+10 Dec,4C6,1,medium,vertical,10:40,10:55,"up from 10:35-10:38, then fell"
+10 Dec,4C6,2,medium,vertical,10:40,10:55,"up from 10:35-10:40, then fell"
+10 Dec,4C6,1,ground,vertical,12:20,12:35,"up 11:23-11:29, then fell"
+10 Dec,4C6,2,ground,vertical,12:04,12:19,"up 11:23-11:32, then fell"
+10 Dec,4C6,NA,medium,still,11:23,11:38,
+10 Dec,4C6,NA,high,still,11:42,11:57,
+10 Dec,4C6,NA,ground,still,10:01,11:18,
+10 Dec,42A,NA,ground,still,13:51,14:06,
+10 Dec,42A,1,ground,horizontal,13:51,14:06,
+10 Dec,42A,2,ground,horizontal,13:51,14:06,
+10 Dec,42A,1,ground,vertical,14:09,14:24,
+10 Dec,42A,2,ground,vertical,14:09,14:24,
+10 Dec,42A,NA,medium,still,14:30,14:45,
+10 Dec,42A,1,medium,horizontal,14:49,15:04,
+10 Dec,42A,2,medium,horizontal,14:49,15:04,
+10 Dec,42A,1,medium,vertical,14:30,14:45,
+10 Dec,42A,2,medium,vertical,14:30,14:45,
+10 Dec,42A,NA,high,still,15:31,15:46,
+10 Dec,42A,1,high,horizontal,15:07,15:23,
+10 Dec,42A,2,high,horizontal,15:07,15:23,
+10 Dec,42A,1,high,vertical,15:31,15:46,
+10 Dec,42A,2,high,vertical,15:31,15:46,
+11 Dec,B8,NA,ground,still,8:50,9:14,
+11 Dec,B8,1,ground,horizontal,8:59,914,was spinning counter clockwise from 8:50-8:59?
+11 Dec,B8,2,ground,horizontal,8:59,914,
+11 Dec,B8,1,ground,vertical,9:17,9:32,"very overcast, not getting much sun, spinning very slowly"
+11 Dec,B8,2,ground,vertical,9:17,9:32,"very overcast, not getting much sun, spinning very slowly"
+11 Dec,B8,NA,medium,still,10:32,10:47,
+11 Dec,B8,1,medium,horizontal,10:13,10:28,
+11 Dec,B8,2,medium,horizontal,10:13,10:28,
+11 Dec,B8,1,medium,vertical,10:32,10:47,
+11 Dec,B8,2,medium,vertical,10:32,10:47,
+11 Dec,B8,NA,high,still,9:37,9:52,
+11 Dec,B8,1,high,horizontal,9:55,10:10,
+11 Dec,B8,2,high,horizontal,9:55,10:10,
+11 Dec,B8,1,high,vertical,9:37,9:52,
+11 Dec,B8,2,high,vertical,9:37,9:52,
+11 Dec,B8,NA,burrow,still,10:03,10:26,"found abandoned tortoise burrow ~ 20m ENE of node, put tags in about 8 inches"
+11 Dec,C0,NA,ground,still,11:01,11:16,
+11 Dec,C0,1,ground,horizontal,11:01,11:16,
+11 Dec,C0,2,ground,horizontal,11:01,11:16,
+11 Dec,C0,1,ground,vertical,12:36,12:51,"tag 6134074b fell off twice during last 5 minutes of trial, tried to restick it, but fell again
+"
+11 Dec,C0,2,ground,vertical,12:36,12:51,
+11 Dec,C0,NA,medium,still,11:18,11:33,
+11 Dec,C0,1,medium,horizontal,11:18,11:33,
+11 Dec,C0,2,medium,horizontal,11:18,11:33,
+11 Dec,C0,1,medium,vertical,11:36,11:51,
+11 Dec,C0,2,medium,vertical,11:36,11:51,
+11 Dec,C0,NA,high,still,11:55,12:10,
+11 Dec,C0,1,high,horizontal,12:12,12:27,
+11 Dec,C0,2,high,horizontal,12:12,12:27,
+11 Dec,C0,1,high,vertical,11:55,12:10,
+11 Dec,C0,2,high,vertical,11:55,12:10,
