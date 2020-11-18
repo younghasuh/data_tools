@@ -31,7 +31,7 @@ beep_prep <- function(df, tag_id) {
     df = df[df$TagId %in% tag_id,]}
   return(df)}
 
-node_prep <- function(df) {
+node_prep <- function(df, latlng) {
   df$NodeId <- toupper(df$NodeId)
   ###nodelocationfile
   colnames(df)[colnames(df)=="lat"] <- "node_lat"
@@ -40,8 +40,6 @@ node_prep <- function(df) {
   long2UTM <- function(long) {
     (floor((long + 180)/6) %% 60) + 1
   }
-  
-  df$zone <- long2UTM(df$node_lng)
   
   lat2UTM <- function(Lat) {
     if (Lat < -72) {Letter='C'
@@ -66,48 +64,51 @@ node_prep <- function(df) {
     } else {Letter='X'}
     return(Letter)}
   
-  df$letter <- sapply(df$node_lat, lat2UTM)
-  df$x <- df$node_lng
-  df$y <- df$node_lat
+  if(latlng) {
   
-  LongLatToUTM <- function(data_frame){
+    df$zone <- long2UTM(df$node_lng)
+    df$letter <- sapply(df$node_lat, lat2UTM)
+  
+    df$x <- df$node_lng
+    df$y <- df$node_lat
+  
+    LongLatToUTM <- function(data_frame){
     ## Args: df, data frame must have x and y columns. Should be from same UTM zone.
     ## Create a spatial dataframe
-    coordinates(data_frame) <- ~x+y
-    proj4string(data_frame) <- CRS("+proj=longlat +datum=WGS84")  
+      coordinates(data_frame) <- ~x+y
+      proj4string(data_frame) <- CRS("+proj=longlat +datum=WGS84")  
     
     ## Get zones for all the points in the data frame. 
     ## Stop if more than one zone is present. 
     ## You can write your own code for handling cases where your 
     ## data comes from different UTM zones.
     
-    zone <- long2UTM(data_frame$x)
-    if (length(unique(zone)) > 1) stop("values from different UTM zones")
-    zone <- unique(zone)
+      zone <- long2UTM(data_frame$x)
+      if (length(unique(zone)) > 1) stop("values from different UTM zones")
+      zone <- unique(zone)
     
     ## Change CRS of the spatial data frame and convert to data frame
-    res <- spTransform(data_frame, CRS(paste0("+proj=utm +zone=", zone, "+datum=WGS84")))
-    return(as.data.frame(res))
-  }
+      res <- spTransform(data_frame, CRS(paste0("+proj=utm +zone=", zone, "+datum=WGS84")))
+      return(as.data.frame(res))
+    }
   
-  nodes <- LongLatToUTM(df)
+  nodes <- LongLatToUTM(df) } else {
+    nodes <- df
+    nodes$y <- nodes$node_lat
+    nodes$x <- nodes$node_lng}
   return(nodes)}
 #if delta > 0:
 #  logging.warning('dropped {:,} records after merging node locations'.format(delta))
 #self.df = df
 
-merge_df <- function(beep_df, node_df, tag_id=NULL, channel=NULL) {
+merge_df <- function(beep_df, node_df, tag_id=NULL, latlng) {
   df <- beep_prep(beep_df, tag_id)
-  nodes_df <- node_prep(node_df)
+  nodes_df <- node_prep(node_df, latlng)
   beep_count <- nrow(df) 
   if (any(nodes_df$NodeId %in% df$NodeId)) {
   df <- merge(df,nodes_df, by="NodeId") } else {print("none of those nodes are in this data! node file not merged")}
   delta = beep_count - nrow(df)
   if (delta > 0) {print(paste("dropped",delta,"records after merging node locations"))}
-  if (!is.null(channel)) {
-    df <- df[df$RadioId %in% channel,]
-  }
-  df$RadioId <- as.integer(df$RadioId)
   return(df)}
 
 ###nodedataset
@@ -137,8 +138,8 @@ get_radius_from_rssi <- function(rssi, path_loss_coefficient=5) {
   return(radius)
 }
 
-advanced_resampled_stats <- function(beeps, node, node_health=NULL, freq, tag_id=NULL, channel=NULL, keep_cols = NULL, calibrate = NULL) {
-  df <- merge_df(beeps, node, tag_id, channel)
+advanced_resampled_stats <- function(beeps, node, node_health=NULL, freq, tag_id=NULL, keep_cols = NULL, calibrate = NULL, latlng = TRUE) {
+  df <- merge_df(beeps, node, tag_id, latlng)
   cols <- c("TagRSSI", "x", "y", "node_lat", "node_lng")
   if(!is.null(node_health)) {
     node_health$nodetime <- node_health$Time
@@ -174,7 +175,7 @@ advanced_resampled_stats <- function(beeps, node, node_health=NULL, freq, tag_id
   filtered_df <- df %>% thicken(freq, colname="freq", by="Time") %>%
     group_by(TagId, RadioId, freq, NodeId) %>%
     summarise_at(cols, min_max)
-  filtered_df$freq <- as.POSIXct(filtered_df$freq, tz="UTC")
+  #filtered_df$freq <- as.POSIXct(filtered_df$freq, tz="UTC")
   } else {
     df$freq <- df[,c(calibrate)]
     cols <- c(cols, "Time")
@@ -183,6 +184,8 @@ advanced_resampled_stats <- function(beeps, node, node_health=NULL, freq, tag_id
       summarise_at(cols, min_max)
   }
   outdf <- as.data.frame(filtered_df)
+  if(inherits(outdf$freq, "Date")) {outdf$freq <- as.POSIXct(paste(outdf$freq, "00:00:00"), tz="UTC")}
+
   DEFAULT_PATH_LOSS_COEFFICIENT=5
   outdf$radius <- sapply(outdf$TagRSSI_max, get_radius_from_rssi, DEFAULT_PATH_LOSS_COEFFICIENT)
   outdf$beep_count <- outdf$TagRSSI_length
@@ -192,33 +195,43 @@ advanced_resampled_stats <- function(beeps, node, node_health=NULL, freq, tag_id
   #outdf$node_exp <- outdf$node_dff^(2)
   return(outdf)}
 
-weighted_average <- function(freq, beeps, node, node_health=NULL, MAX_NODES=0, tag_id=NULL, channel=NULL, calibrate = NULL, keep_cols = NULL) {
+weighted_average <- function(freq, beeps, node, node_health=NULL, MAX_NODES=0, tag_id=NULL, calibrate = NULL, keep_cols = NULL, latlng = TRUE) {
   
-  df <- merge_df(beeps, node, tag_id, channel)
+  df <- merge_df(beeps, node, tag_id, latlng)
   
   zone <- df$zone[1]
   letter <- df$letter[1]
-  filtered_df <- advanced_resampled_stats(beeps = beeps, node = node, node_health = node_health, freq = freq, calibrate = calibrate, keep_cols = keep_cols)
+  filtered_df <- advanced_resampled_stats(beeps = beeps, node = node, node_health = node_health, freq = freq, tag_id = tag_id, calibrate = calibrate, keep_cols = keep_cols)
   #filtered_df <- merge(filtered_df, noderssi, by="NodeId")
   #filtered_df$weight <- filtered_df$beep_count
+  filtered_df$id <- paste(filtered_df$TagId, filtered_df$freq, filtered_df$NodeId)
+  filtered_df <- filtered_df[order(filtered_df$id, -filtered_df$TagRSSI_mean, -filtered_df$beep_count),]
+  filtered_df <- filtered_df[!duplicated(filtered_df$id),]
+  filtered_df <- filtered_df[filtered_df$TagRSSI_mean > -100,]
   filtered_df$weight <- (filtered_df$beep_count)/(filtered_df$TagRSSI_mean)
   filtered_df$num_x <- filtered_df$node_x*filtered_df$weight
   filtered_df$num_y <- filtered_df$node_y*filtered_df$weight
-  filtered_df <- filtered_df[order(filtered_df$TagId, filtered_df$RadioId, filtered_df$freq, -filtered_df$TagRSSI_max),]
+  filtered_df <- filtered_df[order(filtered_df$TagId, filtered_df$freq, -filtered_df$TagRSSI_mean),]
   filtered_df <- data.table(filtered_df)
+  
+  allnodes <- filtered_df[, length(unique(NodeId)), by=c("TagId", "freq")]
+  allnodes$pid <- paste(allnodes$TagId, allnodes$freq)
+
   #WHAT NEEDS TO BE ADDED HERE: SORT BY FREQ THEN MAX RSSI AND ONLY KEEP TOP X ROWS WITHIN EACH RESAMPLE TIME PERIOD
   if (MAX_NODES > 0) {
-    filtered_df <- filtered_df[, head(.SD, MAX_NODES), by=c("TagId", "RadioId", "freq")]
+    filtered_df <- filtered_df[, head(.SD, MAX_NODES), by=c("TagId", "freq")]
   }
   
   if (!is.null(calibrate)) {
-    outdf <- filtered_df %>% group_by(TagId, RadioId, freq) %>%
-      summarise(num_x = sum(num_x), num_y = sum(num_y), total=sum(weight), unique_nodes = length(unique(NodeId)), easting = mean(node_x), northing = mean(node_y), Time = max(Time_max)) #lat = mean(node_lat), lng = mean(node_lng), 
+    outdf <- filtered_df %>% group_by(TagId, freq) %>%
+      summarise(num_x = sum(num_x, na.rm=TRUE), num_y = sum(num_y, na.rm=TRUE), total=sum(weight, na.rm=TRUE), unique_nodes = length(unique(NodeId)), easting = mean(node_x, na.rm=TRUE), northing = mean(node_y, na.rm=TRUE), Time = max(Time_max, na.rm=TRUE)) #lat = mean(node_lat), lng = mean(node_lng), 
   } else {
-  outdf <- filtered_df %>% group_by(TagId, RadioId, freq) %>%
-    summarise(num_x = sum(num_x), num_y = sum(num_y), total=sum(weight), unique_nodes = length(unique(NodeId)), easting = mean(node_x), northing = mean(node_y))
+  outdf <- filtered_df %>% group_by(TagId, freq) %>%
+    summarise(num_x = sum(num_x, na.rm=TRUE), num_y = sum(num_y, na.rm=TRUE), total=sum(weight, na.rm=TRUE), unique_nodes = length(unique(NodeId)), easting = mean(node_x, na.rm=TRUE), northing = mean(node_y, na.rm=TRUE))
   }
   #lat = mean(node_lat), lng = mean(node_lng), 
+  outdf$id <- paste(outdf$TagId, outdf$freq)
+  outdf$total_nodes <- allnodes$V1[match(outdf$id, allnodes$pid)]
   outdf <- as.data.frame(outdf)
   outdf$avg_x <- outdf$num_x / outdf$total
   outdf$avg_y <- outdf$num_y / outdf$total
@@ -233,7 +246,7 @@ weighted_average <- function(freq, beeps, node, node_health=NULL, MAX_NODES=0, t
     outdf$freq <- outdf$Time
     }
   outdf$date <- format(outdf$freq, "%Y-%m-%d")
-  outdf$time_of_day <- format(outdf$freq, "%H:%M:%s")
+  outdf$time_of_day <- format(outdf$freq, "%H:%M:%S")
   outdf$hour <- as.integer(format(outdf$freq, "%H"))
   outdf <- outdf[complete.cases(outdf),]
   coordinates(outdf) <- ~avg_x+avg_y
