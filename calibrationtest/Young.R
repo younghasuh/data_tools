@@ -1,9 +1,9 @@
 library(sf)
 library(ggrepel)
 source("functions/localization.R")
-#infile <- "../data/ABS_TagTest1"
-#all_data <- load_data(infile) #start_time, end_time tags
-setwd("~/Documents/data/archbold/calibration")
+source("functions/data_manager.R")
+
+setwd("~/calibrationtest/")
 beep_data <- read.csv("archbold-calibration-data.csv", as.is=TRUE, na.strings=c("NA", ""))
 
 tags <- read.csv("Archbold_Expt_Data.csv", as.is=TRUE, na.strings=c("NA", "")) #uppercase node letters
@@ -17,7 +17,7 @@ tags$end <- as.POSIXct(paste(tags$date, tags$End.Time), tz="America/New_York")
 tags$PlatformID <- as.character(tags$PlatformID)
 tags[tags$Rotation=="still",]$PlatformID <- "still"
 
-plat1 <- c("61335578", "6134074B", "61664C61")
+plat1 <- c("61335578", "6134074B", "61664C61", "61611E2D")
 plat2 <- c("6133331E", "61336634", "61526633", "6166194C")
 still <- c("61664B1E", "6166194B")
 mytags <- c(plat1, plat2, still)
@@ -67,6 +67,7 @@ test$pt <- tags$NodeID[match(test$freq, tags$session_id)]
 
 matchloc <- test[!duplicated(test$freq),]
 testloc <- weighted_average(freq = freq[1], beep_data, node = nodes,  calibrate = "session_id", MAX_NODES = 0)
+
 testloc$TagLat <- matchloc$TagLat_min[match(testloc$group, matchloc$freq)]
 testloc$TagLng <- matchloc$TagLng_min[match(testloc$group, matchloc$freq)]
 testloc$pt <- tags$NodeID[match(testloc$group, tags$session_id)]
