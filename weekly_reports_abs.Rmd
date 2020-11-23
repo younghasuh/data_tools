@@ -1,0 +1,72 @@
+---
+title: "Weekly reports"
+author: "Young"
+date: "11/23/2020"
+output: html_document
+---
+
+### Load up our functions 
+```{r load-functions, message = FALSE}
+source("functions/data_manager.R")
+source("functions/node_health.R")
+library(readxl)
+library(tidyverse)
+library(stringr)
+```
+
+<br>
+
+#### Set up 
+Infile needs to be updated based on data that has been downloaded from CTT account weekly. Set time accordingly.
+
+Load data from `datafiles` 
+```{r setting-up, message=FALSE}
+infile_oct27 <- "C:/Users/Young/OneDrive/Documents/CTTdata/CTT_data_tools/datafiles/Oct27-Nov2/" 
+
+#This is where you want your output to go
+outpath <- "../data_tools/plots/"
+
+#Set frequency
+freq_node <-"30 min"
+
+#Set time (example)
+#start_time = as.POSIXct("2020-09-22 01:00:00", tz = "America/New_York")
+#end_time = as.POSIXct("2020-09-28 20:00:00", tz = "America/New_York")
+```
+
+
+Merge file and extract relevant information
+```{r merge_files, message = FALSE}
+all_data <- load_data(infile) 
+
+all_data <- load_data("../datafiles/Oct27-Nov2/")
+
+beep_data <- all_data[[1]]
+#beep_data <- beep_data[complete.cases(beep_data), ]
+
+health_data <- all_data[[2]]
+#health_data now has a data frame of all of your node health files. 
+
+gps_data <- all_data[[3]]
+```
+
+<br>
+
+## Node health
+For v2 nodes only
+
+```{r}
+health_df <- health_data[[1]]
+nodes_health <- unique(health_df$NodeId)
+#produces a list of plots per node showing if/when time stamp on sending vs. receiving mismatches occur, and if there are NA values
+#you can index the list by the vector of nodes passed to it
+
+nodes <- node_plots(health_data, nodes_health, freq_node)
+nodes[[1]]
+
+health_df %>% 
+   group_by(NodeId, RadioId) %>%
+   filter(Battery < 3.5) %>% 
+   select(NodeId, RadioId, Time, NodeRSSI, Battery, Latitude, Longitude) %>% 
+   kable()
+```
