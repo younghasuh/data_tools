@@ -174,11 +174,11 @@ probnodes <- health_df %>%
 View(probnodes)
 
 # create table with `kable`
-#health_df %>% 
-#   group_by(NodeId, RadioId) %>%
-#   filter(Battery < 3.5) %>% 
-#   select(NodeId, RadioId, Time, NodeRSSI, Battery, Latitude, Longitude) %>% 
-#   kable()
+health_df %>% 
+   group_by(NodeId, RadioId) %>%
+   filter(Battery < 3.5) %>% 
+   select(NodeId, RadioId, Time, NodeRSSI, Battery, Latitude, Longitude) %>% 
+   kable()
 ```
 
 
