@@ -2,7 +2,7 @@
 title: "Weekly reports for sensor station 1"
 author: "Young"
 date: "11/23/2020"
-output: html_document
+output: github_document
 ---
 
 ### Load functions and packages
