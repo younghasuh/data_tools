@@ -30,6 +30,7 @@ infile_oct27 <- "C:/Users/Young/OneDrive/Documents/CTTdata/CTT_data_tools/datafi
 freq_node <-"30 min"
 
 # Load list of deployed nodes
+setwd("C:/Users/young/Desktop/CTTdata/CTT_data_tools")
 node_list <- read.csv("nodes.csv")
 node_list <- node_list %>% 
   select(NodeId, id)
@@ -89,6 +90,22 @@ health_df <- health_df %>%
 
 health_df %>% 
   select(NodeId, id, RadioId, Time, NodeRSSI, Battery, Latitude, Longitude) %>%
+  group_by(NodeId, id) %>%
+  summarise(maxRSSI = max(NodeRSSI),
+            minRSSI = min(NodeRSSI),
+            maxbattery = max(Battery),
+            minbattery = min(Battery),
+            checkins = n(),
+            batterystatus = ifelse(maxbattery < 3.7, "< 3.7", ""),
+            checkinstatus = ifelse(checkins < 100, "< 100", "")) %>% 
+  filter(id != "NA") %>% #filter out nodes that don't match 
+  kable()
+
+
+# get by hours?
+health_df %>% 
+  select(NodeId, id, RadioId, Time, NodeRSSI, Battery, Latitude, Longitude) %>%
+  mutate(hourly = hour(Time))
   group_by(NodeId, id) %>%
   summarise(maxRSSI = max(NodeRSSI),
             minRSSI = min(NodeRSSI),
