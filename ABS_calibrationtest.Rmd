@@ -19,7 +19,7 @@ source("functions/data_manager.R")
 Set working directory and load data; edit accordingly
 ```{r}
 # Get beep data
-setwd("C:/Users/young/Desktop/CTTdata/CTT_data_tools/calibrationtest") # edit according to your device
+#setwd("C:/Users/young/Desktop/CTTdata/CTT_data_tools/calibrationtest") # edit according to your device
 beep_data <- read.csv("archbold-calibration-data.csv", as.is=TRUE, na.strings=c("NA", ""))
 
 # Set up tag data
