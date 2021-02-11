@@ -33,7 +33,7 @@ freq_node <-"30 min"
 setwd("C:/Users/young/Desktop/CTTdata/CTT_data_tools")
 node_list <- read.csv("nodes.csv")
 node_list <- node_list %>% 
-  select(NodeId, id)
+  dplyr::select(NodeId, id)
 ```
 
 Set day of interest - can this report be generated everyday automatically?
@@ -55,7 +55,7 @@ Load data
 ```{r merge_files, message = FALSE, results='hide', warning=FALSE}
 all_data <- load_data(infile_oct27) 
 
-beep_data <- all_data[[1]]
+#beep_data <- all_data[[1]]
 #beep_data <- beep_data[complete.cases(beep_data), ]
 
 health_data <- all_data[[2]]

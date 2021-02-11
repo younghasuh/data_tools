@@ -1,25 +1,22 @@
----
-title: "Calibration test with new localization"
-author: "Young"
-date: "11/23/2020"
-output: github_document
-editor_options: 
-  chunk_output_type: console
----
+Calibration test with new localization
+================
+Young
+11/23/2020
 
 Adopted script from Jessica Gorzo
 
-Load libraries 
-```{r load-functions, message = FALSE, warning = FALSE}
+Load libraries
+
+``` r
 library(sf)
 library(ggrepel)
 source("functions/localization.R")
 source("functions/data_manager.R")
 ```
 
-
 Set working directory and load data; edit accordingly
-```{r}
+
+``` r
 # Get beep data
 #setwd("C:/Users/young/Desktop/CTTdata/CTT_data_tools/calibrationtest") # edit according to your device
 beep_data <- read.csv("archbold-calibration-data.csv", as.is=TRUE, na.strings=c("NA", ""))
@@ -90,13 +87,25 @@ max_nodes <- 0 #how many nodes should be used in the localization calculation?
 
 
 test <- advanced_resampled_stats(beep_data, nodes, freq = freq[1], keep_cols = c("TagLat", "TagLng"), calibrate = "session_id")
+```
+
+    ## [1] "dropped 0 n/a records from 270889 records"
+
+``` r
 test$pt <- tags$NodeID[match(test$freq, tags$session_id)]
 
 #pt3 <- test[test$pt==10,]
 
 matchloc <- test[!duplicated(test$freq),]
 testloc <- weighted_average(freq = freq[1], beep_data, node = nodes,  calibrate = "session_id", MAX_NODES = 0)
+```
 
+    ## [1] "dropped 0 n/a records from 270889 records"
+    ## [1] "dropped 0 n/a records from 270889 records"
+
+    ## `summarise()` regrouping output by 'TagId' (override with `.groups` argument)
+
+``` r
 testloc$TagLat <- matchloc$TagLat_min[match(testloc$group, matchloc$freq)]
 testloc$TagLng <- matchloc$TagLng_min[match(testloc$group, matchloc$freq)]
 testloc$pt <- tags$NodeID[match(testloc$group, tags$session_id)]
@@ -113,10 +122,9 @@ crs(nodes_spatial) <- CRS("+proj=longlat +datum=WGS84")
 my_nodes <- st_as_sf(nodes_spatial)
 ```
 
-
-
 ## Plotting
-```{r}
+
+``` r
 ggplot() + 
   #geom_point(data=my_locs, aes(x=long,y=lat))
   #  ggmap(ph_basemap) +
@@ -125,12 +133,20 @@ ggplot() +
   geom_sf(data = my_nodes, colour="blue") +
   geom_text(data = nodes, aes(x=lng, y=lat, label = NodeId)) +
   geom_text(data = pts, aes(x=TagLng, y=TagLat, label = NodeID))
+```
 
+![](ABS_calibrationtest_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+
+``` r
 test_loc <- st_as_sf(testloc)
 
 ggplot() + 
   geom_sf(data = test_loc, aes(colour=pt))
+```
 
+![](ABS_calibrationtest_files/figure-gfm/unnamed-chunk-2-2.png)<!-- -->
+
+``` r
 #test_loc3 <- st_as_sf(pt3_loc)
 
 ggplot() + 
@@ -142,8 +158,12 @@ ggplot() +
   geom_sf(data = tag_loc, colour="red") +
   geom_sf(data = my_nodes, colour="blue") +
   geom_sf(data = test_loc, aes(colour=pt)) #+
+```
+
+![](ABS_calibrationtest_files/figure-gfm/unnamed-chunk-2-3.png)<!-- -->
+
+``` r
   #geom_sf(data = test_loc3, colour="yellow") +
   #geom_text_repel(data = pt3, aes(x=node_lng_min, y=node_lat_min, label = TagRSSI_length, colour=freq))
   #geom_text_repel(data = pt3, aes(x=node_lng_min, y=node_lat_min, label = NodeRSSI_mean, colour=freq))
 ```
-
