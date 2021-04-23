@@ -1,0 +1,432 @@
+---
+title: "Calibration test with new localization - Paxton script"
+author: "Young"
+date: "2/11/2021"
+output: github_document
+editor_options: 
+  chunk_output_type: console
+---
+Adopted script from Jessica Gorzo + Kristina Paxton 
+
+Load libraries
+```{r}
+library(sf)
+library(ggrepel)
+library(geosphere)
+library(raster)
+source("functions/localization.R")
+source("functions/data_manager.R")
+
+# ggplot themes
+mytheme <- theme(axis.text=element_text(size=14, color="black"),
+        axis.title=element_text(size=16,face="bold",color="black"),
+        axis.text.x=element_text(size=14, color="black"), 
+        axis.text.y=element_text(size=14, color="black"),
+        legend.text = element_text(size=14, color="black"),
+        legend.title = element_text(size=14, color="black", face="bold"))
+```
+
+
+Load input files
+```{r}
+# Input: raw beep files
+beep_data_calib <- read.csv("archbold-calibration-data.csv", as.is=TRUE, na.strings=c("NA", "")) # n = 1657819
+
+# Input: node files
+# node configuration from December of 2019
+nodes_calib <- read.csv("archbold-nodes-calib-dec19.csv", as.is=TRUE, na.strings=c("NA", ""), strip.white=TRUE) 
+
+nodes_calib <- nodes_calib[,c("NodeId", "lat", "lng")]
+nodes_calib$NodeId <- toupper(nodes_calib$NodeId)
+nodes_spatial <- nodes_calib
+coordinates(nodes_spatial) <- 3:2
+crs(nodes_spatial) <- CRS("+proj=longlat +datum=WGS84") 
+
+# Input: experimental data information
+exp <- read.csv("Archbold_Expt_Data.csv", as.is=TRUE, na.strings=c("NA", "")) #uppercase node letters
+exp$Comments <- NULL
+exp$NodeID <- toupper(exp$NodeID)
+exp$End.Time[31:33] <- "9:14"
+exp$date <- as.Date(paste(2019, exp$Date), format="%Y %d %b")
+exp$session_id <- rownames(exp)
+exp$start <- as.POSIXct(paste(exp$date, exp$Start.Time), tz="America/New_York")
+exp$end <- as.POSIXct(paste(exp$date, exp$End.Time), tz="America/New_York")
+exp$PlatformID <- as.character(exp$PlatformID)
+exp[exp$Rotation=="still",]$PlatformID <- "still"
+
+# Input: tags on platform
+plat1 <- c("61335578", "6134074B", "61664C61", "61611E2D")
+plat2 <- c("6133331E", "61336634", "61526633", "6166194C")
+still <- c("61664B1E", "6166194B")
+tags_calib <- c(plat1, plat2, still)
+
+# get tag data from given tags, n = 1403263
+beep_data_calib <- beep_data_calib[beep_data_calib$TagId %in% mytags,] 
+
+beep_data_calib$PlatformID <- NA
+beep_data_calib$PlatformID[beep_data_calib$TagId %in% still] <- "still"
+beep_data_calib$PlatformID[beep_data_calib$TagId %in% plat1] <- "1"
+beep_data_calib$PlatformID[beep_data_calib$TagId %in% plat2] <- "2"
+beep_data_calib$Time <- as.POSIXct(beep_data_calib$Time, tz = "GMT")
+beep_data_calib$time <- beep_data_calib$Time
+attributes(beep_data_calib$time)$tzone <- "America/New_York" 
+
+# Clean up data and match variable names across dataframes
+beep_data_calib <- beep_data[!is.na(beep_data_calib$PlatformID),] # remove NA
+beep_data_calib$NodeId <- toupper(beep_data_calib$NodeId) # convert to upper case
+beep_data_calib <- beep_data_calib[beep_data_calib$NodeId %in% nodes_calib$NodeId,] # filter nodes only in nodes input 
+
+# Convert to data table
+# add start and end times
+dt1_calib <- data.table(beep_data_calib, start=beep_data_calib$time, end=beep_data_calib$time)
+dt2_calib <- data.table(exp)
+# create key on data.table by columns PlatformID, start, and end
+setkey(dt2_calib, PlatformID, start, end)
+indx <- foverlaps(dt1_calib, dt2_calib, type='within')
+indx <- indx[!is.na(indx$Date),]
+indx <- indx[,c("NodeID", "session_id", "Time", "RadioId", "TagId", "TagRSSI", "NodeId")]
+indx <- merge(indx, nodes, by.x="NodeID", by.y="NodeId", all.x = TRUE)
+colnames(indx)[colnames(indx)=="lat"] <- "TagLat"
+colnames(indx)[colnames(indx)=="lng"] <- "TagLng"
+colnames(indx)[colnames(indx)=="NodeID"] <- "pt"
+
+# table(indx$session_id)
+```
+
+# Plot
+
+1. RSSI x Distance
+```{r}
+freq <- c("3 min", "10 min")
+max_nodes <- 0 #how many nodes should be used in the localization calculation?
+
+test <- advanced_resampled_stats(beep_data_calib, nodes, freq = freq[1], keep_cols = c("TagLat", "TagLng", "NodeID"), calibrate = "session_id")
+#test$pt <- test$pt_min
+
+test$id <- paste(test$TagId, test$freq, test$NodeId)
+test <- test[order(test$id, -test$TagRSSI_mean, -test$beep_count),]
+test <- test[!duplicated(test$id),]
+#pt3 <- test[test$pt==10,]
+
+test$groups <- paste(test$TagId, test$freq)
+alltags <- test[!duplicated(test$groups),]
+pts <- test[!duplicated(test$pt_min),]
+
+tag_loc <- alltags
+coordinates(tag_loc) <- ~TagLng_min+TagLat_min
+crs(tag_loc) <- CRS("+proj=longlat +datum=WGS84") 
+
+dst <- raster::pointDistance(tag_loc, nodes_spatial, lonlat = T, allpairs = T)
+dist_df <- data.frame(dst, row.names = tag_loc$groups)
+colnames(dist_df) <- nodes_spatial$NodeId
+dist_df$Test.Group <- rownames(dist_df)
+
+# rearrange data
+dist.gather <- dist_df %>%
+  tidyr::gather(key = "NodeId", value = "distance", -Test.Group)
+dist.gather$id <- paste(dist.gather$Test.Group, dist.gather$NodeId)
+test$distance <- dist.gather$distance[match(test$id, dist.gather$id)]
+
+plot(TagRSSI_mean ~ distance, data = test)
+exp.mod <- nls(TagRSSI_mean ~ SSasymp(distance, Asym, R0, lrc), data = test) #nonlinear least squares
+summary(exp.mod)
+
+ggplot(test, aes(x = distance, y = TagRSSI_mean)) + 
+  geom_point() +
+  stat_smooth(method = "nls", formula = y ~ SSasymp(x, Asym, R0, lrc), se = FALSE, color = "blue") +
+  scale_y_continuous(name = "Average RSSI", breaks = c(-110, -100, -90, -80, -70, -60, -50, -40), limits = c(-109,-40)) +
+  scale_x_continuous(name = "Distance") +
+  #geom_text(x = 1000, y = -30, label = "RSSI = 63.06914 * exp(-0.009777435*distance) + -100.8424 ", size = 3.5) +
+  theme_classic() + mytheme
+ggsave("RSSI_distance_calibration_nls.png", plot=last_plot(), width=200, height=200, units="mm", dpi=300)
+
+
+ggplot(test, aes(x = distance, y = TagRSSI_mean)) + 
+  geom_point() +
+  stat_smooth(method = "loess", se = TRUE, color = "blue") +
+  scale_y_continuous(name = "Average RSSI", breaks = c(-110, -100, -90, -80, -70, -60, -50, -40, -30), limits = c(-109,-24)) +
+  scale_x_continuous(name = "Distance") +
+  #geom_text(x = 1000, y = -30, label = "RSSI = 63.06914 * exp(-0.009777435*distance) + -100.8424 ", size = 3.5) +
+  theme_classic() + mytheme
+ggsave("RSSI_distance_calibration_loess.png", plot=last_plot(), width=200, height=200, units="mm", dpi=300)
+```
+
+
+
+2. Relation to nodes
+```{r}
+a <- coef(exp.mod)[["R0"]]
+S <- exp(coef(exp.mod)[["lrc"]])
+K <- coef(exp.mod)[["Asym"]]
+
+all_data <- data.frame(TagId = test$TagId, NodeId = test$NodeId, long = test$node_lng_min, lat = test$node_lat_min, avg.RSSI = test$TagRSSI_mean, Test.Group = paste(test$TagId, test$freq))
+test.g90.dat <- all_data[all_data$avg.RSSI > -100,]
+sample.size <- test.g90.dat %>%
+  dplyr::group_by(Test.Group) %>%
+  dplyr::summarise(n.nodes = n()) %>%
+  dplyr::filter(n.nodes < 3)
+test.red.dat <- test.g90.dat[!test.g90.dat$Test.Group %in% sample.size$Test.Group,]
+#K = -100.8424
+#a = -63.06914
+#S = 0.009777435
+test.red.dat$dist.est = abs(log((test.red.dat$avg.RSSI - K)/abs(a))/S) #changed sign on S despite relationship in Paxton's original script
+estimated.location_results <- data.frame(Test.Group=character(), long.est=numeric(), lat.est=numeric(), est.error =numeric())
+tests = unique(test.red.dat$Test.Group)
+for(j in 1:length(tests)) {
+  
+  # Isolate the test 
+  sub.test <- test.red.dat %>% dplyr::filter(Test.Group == tests[j]) 
+  
+  # Determine the node with the strongest avg.RSSI value to be used as starting values
+  max.RSSI <- sub.test[which.max(sub.test$avg.RSSI),]
+  print(j)
+  # Non-linear test to optimize the location of unknown signal by looking at the radius around each Node based on RSSI values (distance) and the pairwise distance between all nodes
+  nls.test <- nls(dist.est ~ geosphere::distm(data.frame(long, lat), c(lng_solution, lat_solution), fun=distHaversine), # distm - matrix of pairwise distances between lat/longs
+                  data = sub.test, start=list(lng_solution=max.RSSI$long, lat_solution=max.RSSI$lat), # used long/lat of NodeId with largest RSSI identified in max.RSSI
+                  control=nls.control(warnOnly = T, minFactor=1/30000)) # gives a warning, but doesn't stop the test from providing an estimate based on the last iteration before the warning
+  
+  # Determine error around the point location estimate
+  c <- car::confidenceEllipse(nls.test, levels=0.95) 
+  ellipse_line <- c[1, ] # isolating one point on the line 
+  ellipse_line <- rbind(ellipse_line, coef(nls.test)) # bringing together the one isolated point on the line and the estimated point - coef(nls.test)
+  est.error <-(distm(ellipse_line[1,], ellipse_line[2,]))
+  
+  # estimated location of the test and error
+  estimated.loc <- data.frame(Test.Group = tests[j], long.est = ellipse_line[2,1], lat.est = ellipse_line[2,2], est.error = est.error)
+  
+  # Populate dataframe with results
+  estimated.location_results <- rbind(estimated.location_results, estimated.loc)
+  
+}
+
+lessinfo <- beep_data[paste(beep_data$TagId, beep_data$session_id) %in% sample.size$Test.Group,]
+testloc <- weighted_average(freq = freq[1], lessinfo, node = nodes,  calibrate = "session_id", MAX_NODES = 0)
+
+lessnodes <- data.frame(Test.Group = testloc@data$id, long.est = testloc@coords[,1], lat.est = testloc@coords[,2], est.error = NA)
+
+#estimated.location_results <- rbind(estimated.location_results, lessnodes)
+
+estimated.location_results$session_id <- sapply(strsplit(as.character(estimated.location_results$Test.Group), " "), "[[", 2)
+estimated.location_results$pt <- test$pt_min[match(estimated.location_results$session_id, test$freq)]
+
+coordinates(estimated.location_results) <- 2:3
+crs(estimated.location_results) <- CRS("+proj=longlat +datum=WGS84") 
+
+tag_loc <- st_as_sf(tag_loc)
+my_nodes <- st_as_sf(nodes_spatial)
+
+ggplot() + 
+  #geom_point(data=my_locs, aes(x=long,y=lat))
+  #  ggmap(ph_basemap) +
+  #geom_sf(data = locs, aes(colour=TagId), inherit.aes = FALSE) + 
+  geom_sf(data = tag_loc, colour="red") +
+  geom_sf(data = my_nodes, colour="blue") +
+  geom_text(data = nodes, aes(x=lng, y=lat, label = NodeId)) #+
+  #geom_text(data = pts, aes(x=TagLng, y=TagLat, label = NodeID))
+
+test_loc <- st_as_sf(estimated.location_results)
+
+ggplot() + 
+  geom_sf(data = test_loc, aes(colour=pt))
+
+#test_loc3 <- st_as_sf(pt3_loc)
+
+ggplot() + 
+  #geom_point(data=my_locs, aes(x=long,y=lat))
+  #  ggmap(ph_basemap) +
+  #geom_sf(data = locs, aes(colour=TagId), inherit.aes = FALSE) + 
+  geom_text_repel(data = ground, aes(x=x, y=y, label = pt)) +
+  geom_text(data = nodes, aes(x=lng, y=lat, label = NodeId), size = 5) +
+  #geom_text(data = pts, aes(x=TagLng_min, y=TagLat_min, label = pt_min), size = 5) +
+  geom_sf(data = tag_loc, colour="red") +
+  geom_sf(data = my_nodes, colour="blue") +
+  geom_sf(data = test_loc, aes(colour=pt)) #+
+  #geom_sf(data = test_loc3, colour="yellow") +
+  #geom_text_repel(data = pt3, aes(x=node_lng_min, y=node_lat_min, label = TagRSSI_length, colour=freq))
+  #geom_text_repel(data = pt3, aes(x=node_lng_min, y=node_lat_min, label = NodeRSSI_mean, colour=freq))
+
+```
+
+
+
+< br >
+
+# Groundtruth data
+I collected opportunistic data on tagged birds by using ArcGIS Survey123 
+
+```{r}
+ground <- read.csv("CTTgroundtruth_fin.csv", as.is=TRUE, na.strings=c("NA", ""))
+#61524B1E -81.35927 27.19960 2020-02-19 2020-02-19 08:22:00 2020-02-19 08:22:00 AO-X 66
+ground$date <- as.Date(ground$Date, format="%m/%d/%y")
+ground$start <- as.POSIXct(paste(ground$date, ground$Starting.time), tz="America/New_York")
+ground$end <- as.POSIXct(paste(ground$date, ground$End.time), tz="America/New_York")
+ground$session_id <- as.integer(rownames(ground)) + max(as.integer(tags$session_id))
+colnames(ground)[colnames(ground)=="TagID"] <- "TagId"
+ground$pt <- paste(ground$Jay.ID, ground$session_id)
+
+# Data downloaded from that time period
+all_data_gt <- load_data("Archbold_input_nov2019/867762040727353/ground") # no node health and gps; which makes sense (V1 nodes)
+beep_data_gt <- all_data_gt[[1]][[1]]
+beep_data_gt <- beep_data_gt[beep_data_gt$TagId %in% ground$TagId,]
+beep_data_gt$time <- beep_data_gt$Time
+attributes(beep_data_gt$time)$tzone <- "America/New_York" 
+beep_data_gt <- beep_data_gt[beep_data_gt$NodeId %in% nodes_calib$NodeId,] 
+#AOX66 <- beep_data[beep_data$time > as.POSIXct("2020-02-19 08:21:59") & beep_data$time < as.POSIXct("2020-02-19 08:23:00"),]
+dt1_gt <- data.table(beep_data_gt, start=beep_data_gt$time, end=beep_data_gt$time)
+dt2_gt <- data.table(ground)
+setkey(dt2_gt, TagId, start, end)
+indx2 <- foverlaps(dt1_gt, dt2_gt, type='within')
+indx2 <- indx2[!is.na(indx2$Date),]
+indx2 <- indx2[,c("pt","session_id", "Time", "RadioId", "TagId", "TagRSSI", "NodeId", "y", "x")]
+#APX62_merge
+colnames(indx2)[colnames(indx2)=="y"] <- "TagLat"
+colnames(indx2)[colnames(indx2)=="x"] <- "TagLng"
+beep_data_gt  <- rbind(indx, indx2)
+#beep_data$id <- paste(beep_data$TagId, beep_data$session_id)
+beep_data_gt <- as.data.frame(beep_data_gt)
+
+#WHY SO MANY DROPPED RECORDS FROM THE GROUND-TRUTH?
+#beep_data <- beep_data[beep_data$PlatformID == "still",] A
+```
+
+
+
+```{r}
+freq <- c("3 min", "10 min")
+max_nodes <- 0 #how many nodes should be used in the localization calculation?
+
+test_gt <- advanced_resampled_stats(beep_data_gt, nodes, freq = freq[1], keep_cols = c("TagLat", "TagLng", "pt"), calibrate = "session_id")
+#test$pt <- test$pt_min
+
+test_gt$id <- paste(test_gt$TagId, test_gt$freq, test_gt$NodeId)
+test_gt <- test_gt[order(test_gt$id, -test_gt$TagRSSI_mean, -test_gt$beep_count),]
+test_gt <- test_gt[!duplicated(test_gt$id),]
+#pt3 <- test[test$pt==10,]
+
+test_gt$groups <- paste(test_gt$TagId, test_gt$freq)
+alltags_gt <- test[!duplicated(test_gt$groups),]
+pts_gt <- test_gt[!duplicated(test_gt$pt_min),]
+
+tag_loc_gt <- alltags_gt
+coordinates(tag_loc_gt) <- ~TagLng_min+TagLat_min
+crs(tag_loc_gt) <- CRS("+proj=longlat +datum=WGS84") 
+
+dst_gt <- raster::pointDistance(tag_loc_gt, nodes_spatial, lonlat = T, allpairs = T)
+dist_df_gt <- data.frame(dst_gt, row.names = tag_loc_gt$groups)
+colnames(dist_df_gt) <- nodes_spatial$NodeId
+dist_df_gt$Test.Group <- rownames(dist_df_gt)
+
+# rearrange data
+dist.gather_gt <- dist_df_gt %>%
+  tidyr::gather(key = "NodeId", value = "distance", -Test.Group)
+dist.gather_gt$id <- paste(dist.gather_gt$Test.Group, dist.gather_gt$NodeId)
+test_gt$distance <- dist.gather_gt$distance[match(test_gt$id, dist.gather_gt$id)]
+
+plot(TagRSSI_mean ~ distance, data = test_gt)
+exp.mod_gt <- nls(TagRSSI_mean ~ SSasymp(distance, Asym, R0, lrc), data = test_gt) #nonlinear least squares
+summary(exp.mod_gt)
+
+ggplot(test_gt, aes(x = distance, y = TagRSSI_mean)) + 
+  geom_point() +
+  stat_smooth(method = "nls", formula = y ~ SSasymp(x, Asym, R0, lrc), se = FALSE, color = "blue") +
+  scale_y_continuous(name = "Average RSSI", breaks = c(-110, -100, -90, -80, -70, -60, -50, -40, -30), limits = c(-109,-24)) +
+  scale_x_continuous(name = "Distance") +
+  #geom_text(x = 1000, y = -30, label = "RSSI = 63.06914 * exp(-0.009777435*distance) + -100.8424 ", size = 3.5) +
+  theme_classic()
+ggsave("RSSI_distance_groundtruth.png", plot=last_plot(), width=300, height=300, units="mm", dpi=300)
+
+
+
+
+a <- coef(exp.mod)[["R0"]]
+S <- exp(coef(exp.mod)[["lrc"]])
+K <- coef(exp.mod)[["Asym"]]
+
+all_data_gt <- data.frame(TagId = test_gt$TagId, NodeId = test_gt$NodeId, long = test_gt$node_lng_min, lat = test_gt$node_lat_min, avg.RSSI = test_gt$TagRSSI_mean, Test.Group = paste(test_gt$TagId, test_gt$freq))
+test.g90.dat_gt <- all_data_gt[all_data_gt$avg.RSSI > -100,]
+sample.size_gt <- test.g90.dat_gt %>%
+  dplyr::group_by(Test.Group) %>%
+  dplyr::summarise(n.nodes = n()) %>%
+  dplyr::filter(n.nodes < 3)
+test.red.dat_gt <- test.g90.dat_gt[!test.g90.dat_gt$Test.Group %in% sample.size_gt$Test.Group,]
+#K = -100.8424
+#a = -63.06914
+#S = 0.009777435
+test.red.dat_gt$dist.est = abs(log((test.red.dat_gt$avg.RSSI - K)/abs(a))/S) #changed sign on S despite relationship in Paxton's original script
+estimated.location_results_gt <- data.frame(Test.Group=character(), long.est=numeric(), lat.est=numeric(), est.error =numeric())
+tests_gt = unique(test.red.dat_gt$Test.Group)
+for(j in 1:length(tests_gt)) {
+  
+  # Isolate the test 
+  sub.test <- test.red.dat_gt %>% dplyr::filter(Test.Group == tests[j]) 
+  
+  # Determine the node with the strongest avg.RSSI value to be used as starting values
+  max.RSSI <- sub.test[which.max(sub.test$avg.RSSI),]
+  print(j)
+  # Non-linear test to optimize the location of unknown signal by looking at the radius around each Node based on RSSI values (distance) and the pairwise distance between all nodes
+  nls.test <- nls(dist.est ~ geosphere::distm(data.frame(long, lat), c(lng_solution, lat_solution), fun=distHaversine), # distm - matrix of pairwise distances between lat/longs
+                  data = sub.test, start=list(lng_solution=max.RSSI$long, lat_solution=max.RSSI$lat), # used long/lat of NodeId with largest RSSI identified in max.RSSI
+                  control=nls.control(warnOnly = T, minFactor=1/30000)) # gives a warning, but doesn't stop the test from providing an estimate based on the last iteration before the warning
+  
+  # Determine error around the point location estimate
+  c <- car::confidenceEllipse(nls.test, levels=0.95) 
+  ellipse_line <- c[1, ] # isolating one point on the line 
+  ellipse_line <- rbind(ellipse_line, coef(nls.test)) # bringing together the one isolated point on the line and the estimated point - coef(nls.test)
+  est.error <-(distm(ellipse_line[1,], ellipse_line[2,]))
+  
+  # estimated location of the test and error
+  estimated.loc <- data.frame(Test.Group = tests[j], long.est = ellipse_line[2,1], lat.est = ellipse_line[2,2], est.error = est.error)
+  
+  # Populate dataframe with results
+  estimated.location_results <- rbind(estimated.location_results, estimated.loc)
+  
+}
+
+lessinfo <- beep_data[paste(beep_data$TagId, beep_data$session_id) %in% sample.size$Test.Group,]
+testloc <- weighted_average(freq = freq[1], lessinfo, node = nodes,  calibrate = "session_id", MAX_NODES = 0)
+
+lessnodes <- data.frame(Test.Group = testloc@data$id, long.est = testloc@coords[,1], lat.est = testloc@coords[,2], est.error = NA)
+
+#estimated.location_results <- rbind(estimated.location_results, lessnodes)
+
+estimated.location_results$session_id <- sapply(strsplit(as.character(estimated.location_results$Test.Group), " "), "[[", 2)
+estimated.location_results$pt <- test$pt_min[match(estimated.location_results$session_id, test$freq)]
+
+coordinates(estimated.location_results) <- 2:3
+crs(estimated.location_results) <- CRS("+proj=longlat +datum=WGS84") 
+
+tag_loc <- st_as_sf(tag_loc)
+my_nodes <- st_as_sf(nodes_spatial)
+
+ggplot() + 
+  #geom_point(data=my_locs, aes(x=long,y=lat))
+  #  ggmap(ph_basemap) +
+  #geom_sf(data = locs, aes(colour=TagId), inherit.aes = FALSE) + 
+  geom_sf(data = tag_loc, colour="red") +
+  geom_sf(data = my_nodes, colour="blue") +
+  geom_text(data = nodes, aes(x=lng, y=lat, label = NodeId)) #+
+  #geom_text(data = pts, aes(x=TagLng, y=TagLat, label = NodeID))
+
+test_loc <- st_as_sf(estimated.location_results)
+
+ggplot() + 
+  geom_sf(data = test_loc, aes(colour=pt))
+
+#test_loc3 <- st_as_sf(pt3_loc)
+
+ggplot() + 
+  #geom_point(data=my_locs, aes(x=long,y=lat))
+  #  ggmap(ph_basemap) +
+  #geom_sf(data = locs, aes(colour=TagId), inherit.aes = FALSE) + 
+  geom_text_repel(data = ground, aes(x=x, y=y, label = pt)) +
+  geom_text(data = nodes, aes(x=lng, y=lat, label = NodeId), size = 5) +
+  #geom_text(data = pts, aes(x=TagLng_min, y=TagLat_min, label = pt_min), size = 5) +
+  geom_sf(data = tag_loc, colour="red") +
+  geom_sf(data = my_nodes, colour="blue") +
+  geom_sf(data = test_loc, aes(colour=pt)) #+
+  #geom_sf(data = test_loc3, colour="yellow") +
+  #geom_text_repel(data = pt3, aes(x=node_lng_min, y=node_lat_min, label = TagRSSI_length, colour=freq))
+  #geom_text_repel(data = pt3, aes(x=node_lng_min, y=node_lat_min, label = NodeRSSI_mean, colour=freq))
+
+```
+

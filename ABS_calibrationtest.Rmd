@@ -7,7 +7,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-Adopted script from Jessica Gorzo
+Adopted script from Jessica Gorzo, called `Young.R`
 
 Load libraries 
 ```{r load-functions, message = FALSE, warning = FALSE}

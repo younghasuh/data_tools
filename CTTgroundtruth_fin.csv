@@ -1,0 +1,49 @@
+Jay ID,TagID,Date,Starting time,End time,Behavior,Other - Behavior,Comments,Weather,Other - Weather,Other - Jay ID,Movement,Other - Movement,x,y
+AP-X,6152072D,2/19/2020 14:45,09:45,09:46,on_ground_on_firebreak,,,,,,,,-81.35907255,27.19903506
+AO-X,61524B1E,2/19/2020 14:41,09:41,09:42,on_ground_on_firebreak,,,,,,,,-81.35900546,27.19899883
+AO-X,61524B1E,2/19/2020 13:26,08:23,08:32,perched_high_>1m_,,4m pine,,,,,,-81.35920447,27.19963326
+AP-X,6152072D,2/19/2020 17:00,08:23,08:26,perched_medium_~1m_,,,,,,,,-81.35923519,27.1997342
+AO-X,61524B1E,2/19/2020 13:22,08:22,08:22,perched_high_>1m_,,,,,,,,-81.35926734,27.1996001
+-QGH,61522D34,2/19/2020 17:00,08:16,08:19,perched_high_>1m_,,"On 5+m tree, hopped around a little bit, with -QGA",,,,,,-81.35744472,27.20116492
+-QGH,61522D34,2/19/2020 13:15,08:15,08:15,perched_high_>1m_,,,,,,,,-81.35749483,27.20107133
+-QGA,61342D4C,2/19/2020 17:00,08:12,08:14,perched_high_>1m_,,On 4m oak,,,,,,-81.35747958,27.20111294
+-QGA,61342D4C,2/20/2020 13:46,08:44,08:47,perched_high_>1m_,,,overcast,,,,,-81.35753837,27.20100777
+-QGH,61522D34,2/20/2020 17:00,08:30,08:31,perched_super_high_>3m_,,,overcast,,,,,-81.35745515,27.20114164
+-QGH,61522D34,2/20/2020 13:32,08:32,08:35,on_ground_in_vegetation,,,overcast,,,,,-81.35743793,27.20115173
+AO-X,61524B1E,2/28/2020 14:46,09:45,09:49,perched_medium_~1m_,,,clear,,,,,-81.35991068,27.19969108
+AO-X,61524B1E,2/28/2020 14:43,09:43,09:44,on_ground_on_firebreak,,,clear,,,,,-81.35992828,27.19966888
+AP-X,6152072D,2/28/2020 14:29,09:29,09:36,perched_medium_~1m_,,,clear,,,,,-81.36037163,27.20003109
+AO-X,61524B1E,2/24/2020 15:59,10:58,11:01,on_ground_on_firebreak,,,clear,,,,,-81.35708814,27.19885444
+AP-X,6152072D,3/22/2020 16:00,10:28,10:30,perched_high_>1m_,,,clear,,,,,-81.35932922,27.19942439
+Fallen tag,61525566,3/21/2020 16:00,10:16,10:16,other,Fallen tag,FLIPPED OVER,,,,,,-81.35545663,27.19656356
+Fallen tag,61522D34,3/21/2020 16:00,09:46,09:46,other,Fallen tag,,,,,,,-81.35319506,27.19620454
+Fallen tag,61335533,3/21/2020 13:57,09:57,09:57,other,Fallen tag,61335533,,,,,,-81.35529449,27.19617149
+AO-X,61524B1E,3/3/2020 17:00,10:47,10:50,perched_high_>1m_,,,overcast,,,,,-81.36517401,27.20076361
+AY-X,192D4C1EEE,3/25/2020 13:36,09:36,09:36,perched_medium_~1m_,,,overcast,,,moving,,-81.35849769,27.19399013
+AY-X,192D4C1EEE,3/25/2020 12:54,08:54,08:54,perched_high_>1m_,,,overcast,,,stationary,,-81.35872669,27.19390917
+AY-X,192D4C1EEE,3/24/2020 14:01,10:01,10:01,on_ground_in_vegetation,,,clear,,,moving,,-81.35855319,27.19389889
+PW-X,192D2A1970,3/24/2020 13:31,09:31,09:31,on_ground_on_firebreak,,,clear,,,moving,,-81.35736947,27.19876952
+BP-X,664B3319C2,3/24/2020 13:18,09:18,09:18,perched_high_>1m_,,,overcast,,,stationary,,-81.35455972,27.19613076
+BO-X,664B4C5255,3/24/2020 13:17,09:17,09:17,perched_high_>1m_,,,"clear,overcast",,,stationary,,-81.35448698,27.19605367
+WY-X,61330034,3/23/2020 12:38,08:37,08:38,perched_high_>1m_,,,clear,,,moving,,-81.35444652,27.19601401
+WY-X,61330034,3/23/2020 12:34,08:34,08:34,on_ground_on_firebreak,,,clear,,,stationary,,-81.35449402,27.19605791
+GP-X,4C074B3425,3/23/2020 12:33,08:33,08:33,perched_medium_~1m_,,,clear,,,stationary,,-81.35446828,27.19600043
+BH-X,5578784B78,3/23/2020 12:03,08:03,08:03,on_ground_on_firebreak,,,clear,,,"stationary,moving",,-81.35253947,27.19535324
+RA-X,7852526663,3/30/2020 14:45,10:45,10:45,on_ground_on_firebreak,,,overcast,,RA-X,moving,,-81.35449711,27.19366883
+AY-X,192D4C1EEE,3/30/2020 14:03,10:03,10:04,perched_high_>1m_,,,overcast,,,stationary,,-81.35859786,27.19411262
+AY-X,192D4C1EEE,3/30/2020 13:41,09:41,09:42,perched_high_>1m_,,,clear,,,stationary,,-81.35751349,27.19385113
+GL-X,610707611E,3/30/2020 13:30,09:30,09:30,perched_low_<1m_,,,clear,,,stationary,,-81.3572773,27.19475958
+-QWB,6134077F,3/30/2020 13:29,09:29,09:29,perched_high_>1m_,,,clear,,,stationary,,-81.35728939,27.19477371
+GL-X,610707611E,3/30/2020 13:27,09:27,09:27,perched_high_>1m_,,,clear,,,"stationary,moving",,-81.35717697,27.19484362
+AY-X,192D4C1EEE,3/30/2020 12:10,08:10,08:10,perched_medium_~1m_,,,overcast,,,stationary,,-81.35852683,27.19355845
+AY-X,192D4C1EEE,3/30/2020 12:07,08:07,08:07,perched_super_high_>3m_,,,overcast,,,stationary,,-81.35849842,27.1936387
+-QWB,6134077F,3/30/2020 12:02,08:02,08:02,on_ground_in_vegetation,,,overcast,,,stationary,,-81.35812415,27.19386768
+WY-X,61330034,3/30/2020 11:51,07:50,07:51,on_ground_on_firebreak,,,overcast,,,moving,,-81.34983449,27.19380316
+BO-X,664B4C5255,3/26/2020 21:11,17:11,17:13,perched_high_>1m_,,,clear,,,moving,,-81.35569191,27.19627574
+RA-X,7852526663,3/26/2020 13:03,09:03,09:03,on_ground_on_firebreak,,,overcast,,RA-X,moving,,-81.35425627,27.1938794
+AO-X,61524B1E,3/25/2020 15:13,11:13,11:13,perched_high_>1m_,,,clear,,,stationary,,-81.35763756,27.19868955
+Fallen tag,4B66192A,4/14/2020 16:00,10:08,10:10,on_ground_in_vegetation,,Fallen tag retrieved,overcast,,4B66192A,stationary,,-81.35664368,27.20339356
+Fallen tag,78667855,4/14/2020 14:47,10:47,10:47,on_ground_in_vegetation,,Fallen tag,"clear,overcast",,78667855,stationary,,-81.3611895,27.1984599
+Fallen tag,192D192A,4/14/2020 15:18,11:18,11:18,on_ground_in_vegetation,,Fallen tag,clear,,192D192A,stationary,,-81.35808361,27.19478536
+Fallen tag,1E4B1E07,4/14/2020 15:35,11:35,11:35,on_ground_in_vegetation,,Fallen tag,clear,,1E4B1E07,stationary,,-81.36228457,27.19080006
+WW-XH,4B662A5529,4/15/2020 12:28,08:26,08:28,perched_low_<1m_,,,clear,,WW-XH,moving,,-81.35426268,27.19693552
