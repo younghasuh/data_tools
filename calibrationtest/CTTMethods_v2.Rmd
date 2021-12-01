@@ -1,0 +1,909 @@
+---
+title: "Untitled"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+#Libraries
+```{r}
+library(sp)
+library(adehabitatHR)
+library(ggplot2)
+library(ggmap)
+```
+
+#Load data
+Focus on channel 2
+
+*R being dumb and can't read it all of a sudden without the path*
+
+30 second averages for Dec 10-11
+```{r}
+#tags
+t1 <- read.csv("C:/Users/young/Documents/MS cell track methods/CTTMethods/testtags/tag_61335578_channel_2_freq_30S.csv") 
+t2 <- read.csv("C:/Users/young/Documents/MS cell track methods/CTTMethods/testtags/tag_61664C61_channel_2_freq_30S.csv") 
+t3<- read.csv("C:/Users/young/Documents/MS cell track methods/CTTMethods/testtags/tag_6133331E_channel_2_freq_30S.csv") 
+t4 <- read.csv("C:/Users/young/Documents/MS cell track methods/CTTMethods/testtags/tag_61336634_channel_2_freq_30S.csv") 
+t5 <- read.csv("C:/Users/young/Documents/MS cell track methods/CTTMethods/testtags/tag_61526633_channel_2_freq_30S.csv")
+t6 <- read.csv("C:/Users/young/Documents/MS cell track methods/CTTMethods/testtags/tag_6166194C_channel_2_freq_30S.csv") 
+t7 <- read.csv("C:/Users/young/Documents/MS cell track methods/CTTMethods/testtags/tag_6134074B_channel_2_freq_30S.csv") 
+t8 <- read.csv("C:/Users/young/Documents/MS cell track methods/CTTMethods/testtags/tag_61611E2D_channel_2_freq_30S.csv") 
+t9 <- read.csv("C:/Users/young/Documents/MS cell track methods/CTTMethods/testtags/tag_61664B1E_channel_2_freq_30S.csv") 
+t10 <- read.csv("C:/Users/young/Documents/MS cell track methods/CTTMethods/testtags/tag_6166194B_channel_2_freq_30S.csv") 
+
+
+t1$ID <- "61335578"
+t1$time <- as.POSIXct(t1$Time)
+
+t2$ID <- "61664C61"
+t2$time <- as.POSIXct(t2$Time)
+
+t3$ID <- "6133331E"
+t3$time <- as.POSIXct(t3$Time)
+
+t4$ID <- "61336634"
+t4$time <- as.POSIXct(t4$Time)
+
+t5$ID <- "61526633"
+t5$time <- as.POSIXct(t5$Time)
+
+t6$ID <- "6166194C"
+t6$time <- as.POSIXct(t6$Time)
+
+t8$ID <- "6134074B"
+t8$time <- as.POSIXct(t8$Time)
+
+t7$ID <- "61611E2D"
+t7$time <- as.POSIXct(t7$Time)
+
+t9$ID <- "61664B1E"
+t9$time <- as.POSIXct(t9$Time)
+
+t10$ID <- "6166194B"
+t10$time <- as.POSIXct(t10$Time)
+
+tags <- rbind(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10)
+
+
+#by platforms
+
+platform1 <- rbind(t1,t8,t2,t7)
+platform2 <- rbind(t3,t4,t5,t6)
+still <- rbind(t9, t10)
+```
+
+#Get base map
+```{r}
+#need Google API key
+register_google(key = "AIzaSyBw0JWISXhUFty3EIykKthrDrlXOPY5O_I")
+
+mybasemap <- get_map(location = c(lon = mean(exp1.sp@coords[,1]) , 
+                                  lat = mean(exp1.sp@coords[,2])), 
+                     source = "google", zoom = 17, maptype = 'satellite')
+
+ggmap(mybasemap)
+```
+
+#Node map
+```{r}
+#nodes
+nodes <- read.csv("C:/Users/young/Documents/MS cell track methods/CTTMethods/archbold-nodes.csv")
+
+node_4C6 <- nodes[(nodes$NodeId == "4C6"),]
+node_42A<- nodes[(nodes$NodeId == "42A"),]
+node_C0 <- nodes[(nodes$NodeId == "C0"),]
+node_B8 <- nodes[(nodes$NodeId == "B8"),]
+
+node_4C6.sp <- node_4C6[c("NodeId", "lat", "lng")]
+coordinates(node_4C6.sp) <- c("lng", "lat")
+node_42A.sp <- node_42A[c("NodeId", "lat", "lng")]
+coordinates(node_42A.sp) <- c("lng", "lat")
+node_C0.sp <- node_C0[c("NodeId", "lat", "lng")]
+coordinates(node_C0.sp) <- c("lng", "lat")
+node_B8.sp <- node_C0[c("NodeId", "lat", "lng")]
+coordinates(node_B8.sp) <- c("lng", "lat")
+```
+
+#Actual locations of platforms
+```{r}
+library(geosphere)
+
+#actual location for node 4C6
+act.loc.4c6 <- destPoint(node_4C6.sp, b=190, d=1.96)
+act.loc.4c6.sp <- as.data.frame(act.loc.4c6)
+coordinates(act.loc.4c6.sp) <- c("lon", "lat")
+
+#actual location for node 42A
+act.loc.42a <- destPoint(node_42A.sp, b=172, d=2.32)
+act.loc.42a.sp <- as.data.frame(act.loc.42a)
+coordinates(act.loc.42a.sp) <- c("lon", "lat")
+
+#actual location for node B8
+act.loc.b8 <- destPoint(node_B8.sp, b=103, d=3.83)
+act.loc.b8.sp <- as.data.frame(act.loc.b8)
+coordinates(act.loc.b8.sp) <- c("lon", "lat")
+
+#actual location for node B8
+act.loc.c0 <- destPoint(node_C0.sp, b=204, d=1.55)
+act.loc.c0.sp <- as.data.frame(act.loc.c0)
+coordinates(act.loc.c0.sp) <- c("lon", "lat")
+
+```
+
+
+#Filter by time
+1. Platform 1 @ Node 4C6, Dec 10
+exp1: ground -- horizontal 10:01-10:16
+exp3: medium -- horizontal 10:17-10:32
+exp5: high -- horizontal 11:42-11:57
+exp7: high -- vertical 12:00-12:19
+exp9: medium -- vertical 10:40-10:55 
+exp11: ground -- vertical 12:20-12:35 
+
+```{r}
+exp1 <- platform1[with(platform1, time >="2019-12-10 15:01:00" & time <="2019-12-10 15:16:00"),] 
+exp3 <- platform1[with(platform1, time >="2019-12-10 15:17:00" & time <="2019-12-10 15:32:00"),] 
+exp5 <- platform1[with(platform1, time >="2019-12-10 16:42:00" & time <="2019-12-10 16:57:00"),]
+exp7 <- platform1[with(platform1, time >="2019-12-10 17:00:00" & time <="2019-12-10 17:19:00"),]
+exp9 <- platform1[with(platform1, time >="2019-12-10 15:40:00" & time <="2019-12-10 15:55:00"),]
+exp11 <- platform1[with(platform1, time >="2019-12-10 17:20:00" & time <="2019-12-10 17:35:00"),]
+
+exps.p1.4c6 <- list(exp1, exp3, exp5, exp7, exp9, exp11)
+```
+
+2. Platform 1 @ Node 42A, Dec 10
+```{r}
+exp17 <- platform1[with(platform1, time >="2019-12-10 18:51:00" & time <="2019-12-10 19:06:00"),] 
+exp19 <- platform1[with(platform1, time >="2019-12-10 19:09:00" & time <="2019-12-10 19:24:00"),] 
+exp22 <- platform1[with(platform1, time >="2019-12-10 19:49:00" & time <="2019-12-10 20:04:00"),]
+exp24 <- platform1[with(platform1, time >="2019-12-10 19:30:00" & time <="2019-12-10 19:45:00"),]
+exp27 <- platform1[with(platform1, time >="2019-12-10 20:07:00" & time <="2019-12-10 20:23:00"),]
+exp29 <- platform1[with(platform1, time >="2019-12-10 20:31:00" & time <="2019-12-10 20:46:00"),]
+
+exps.p1.42a <- list(exp17, exp19, exp22, exp24, exp27, exp29)
+```
+
+3. Platform 1 @ Node B8, Dec 11
+```{r}
+exp32 <- platform1[with(platform1, time >="2019-12-11 13:59:00" & time <="2019-12-11 14:14:00"),] 
+exp34 <- platform1[with(platform1, time >="2019-12-11 14:17:00" & time <="2019-12-11 14:32:00"),] 
+exp37 <- platform1[with(platform1, time >="2019-12-11 15:13:00" & time <="2019-12-11 15:28:00"),]
+exp39 <- platform1[with(platform1, time >="2019-12-11 15:32:00" & time <="2019-12-11 15:47:00"),]
+exp42 <- platform1[with(platform1, time >="2019-12-11 14:55:00" & time <="2019-12-11 15:10:00"),]
+exp44 <- platform1[with(platform1, time >="2019-12-11 14:37:00" & time <="2019-12-11 14:52:00"),]
+
+exps.p1.b8 <- list(exp32, exp34, exp37, exp39, exp42, exp44)
+```
+
+4. Platform 1 @ Node C0, Dec 11
+```{r}
+exp48 <- platform1[with(platform1, time >="2019-12-11 16:01:00" & time <="2019-12-11 16:16:00"),] 
+exp50 <- platform1[with(platform1, time >="2019-12-11 17:36:00" & time <="2019-12-11 17:51:00"),] 
+exp53 <- platform1[with(platform1, time >="2019-12-11 16:18:00" & time <="2019-12-11 16:33:00"),]
+exp55 <- platform1[with(platform1, time >="2019-12-11 16:36:00" & time <="2019-12-11 16:51:00"),]
+exp58 <- platform1[with(platform1, time >="2019-12-11 17:12:00" & time <="2019-12-11 17:27:00"),]
+exp60 <- platform1[with(platform1, time >="2019-12-11 16:55:00" & time <="2019-12-11 17:10:00"),]
+
+exps.p1.c0 <- list(exp48, exp50, exp53, exp55, exp58, exp60)
+```
+
+5. Platform 2 @ Node 4C6, Dec 10
+```{r}
+exp2 <- platform2[with(platform2, time >="2019-12-10 15:01:00" & time <="2019-12-10 15:16:00"),] 
+exp4 <- platform2[with(platform2, time >="2019-12-10 15:17:00" & time <="2019-12-10 15:32:00"),] 
+exp6 <- platform2[with(platform2, time >="2019-12-10 16:42:00" & time <="2019-12-10 16:57:00"),]
+exp8 <- platform2[with(platform2, time >="2019-12-10 16:03:00" & time <="2019-12-10 16:18:00"),]
+exp10 <- platform2[with(platform2, time >="2019-12-10 15:40:00" & time <="2019-12-10 15:55:00"),]
+exp12 <- platform2[with(platform2, time >="2019-12-10 17:04:00" & time <="2019-12-10 17:19:00"),]
+
+exps.p2.4c6 <- list(exp2, exp4, exp6, exp8, exp10, exp12)
+```
+
+6. Platform 2 @ Node 42A, Dec 10
+```{r}
+exp18 <- platform2[with(platform2, time >="2019-12-10 18:51:00" & time <="2019-12-10 19:06:00"),] 
+exp20 <- platform2[with(platform2, time >="2019-12-10 19:09:00" & time <="2019-12-10 19:24:00"),] 
+exp23 <- platform2[with(platform2, time >="2019-12-10 19:49:00" & time <="2019-12-10 20:04:00"),]
+exp25 <- platform2[with(platform2, time >="2019-12-10 19:30:00" & time <="2019-12-10 19:45:00"),]
+exp28 <- platform2[with(platform2, time >="2019-12-10 19:07:00" & time <="2019-12-10 19:23:00"),]
+exp30 <- platform2[with(platform2, time >="2019-12-10 20:31:00" & time <="2019-12-10 20:46:00"),]
+
+exps.p2.42a <- list(exp18, exp20, exp23, exp25, exp28, exp30)
+```
+
+7. Platform 2 @ Node B8, Dec 11
+```{r}
+exp33 <- platform2[with(platform2, time >="2019-12-11 13:59:00" & time <="2019-12-11 14:14:00"),] 
+exp35 <- platform2[with(platform2, time >="2019-12-11 14:17:00" & time <="2019-12-11 14:32:00"),] 
+exp38 <- platform2[with(platform2, time >="2019-12-11 15:13:00" & time <="2019-12-11 15:28:00"),]
+exp40 <- platform2[with(platform2, time >="2019-12-11 15:32:00" & time <="2019-12-11 15:47:00"),]
+exp43 <- platform2[with(platform2, time >="2019-12-11 14:55:00" & time <="2019-12-11 15:10:00"),]
+exp45 <- platform2[with(platform2, time >="2019-12-11 14:37:00" & time <="2019-12-11 14:52:00"),]
+
+exps.p2.b8 <- list(exp33, exp35, exp38, exp40, exp43, exp45)
+```
+
+8. Platform 2 @ Node C0, Dec 11
+```{r}
+exp49 <- platform2[with(platform2, time >="2019-12-11 16:01:00" & time <="2019-12-11 16:16:00"),] 
+exp51 <- platform2[with(platform2, time >="2019-12-11 17:36:00" & time <="2019-12-11 17:51:00"),] 
+exp54 <- platform2[with(platform2, time >="2019-12-11 16:18:00" & time <="2019-12-11 16:33:00"),]
+exp56 <- platform2[with(platform2, time >="2019-12-11 16:36:00" & time <="2019-12-11 16:51:00"),]
+exp59 <- platform2[with(platform2, time >="2019-12-11 17:12:00" & time <="2019-12-11 17:27:00"),]
+exp61 <- platform2[with(platform2, time >="2019-12-11 16:55:00" & time <="2019-12-11 17:10:00"),]
+
+exps.p2.c0 <- list(exp49, exp51, exp54, exp56, exp59, exp61)
+```
+
+9. Still -- Dec 10
+```{r}
+#node 4C6
+exp13 <- still[with(still, time >="2019-12-10 16:23:00" & time <="2019-12-10 16:38:00"),] 
+exp14 <- still[with(still, time >="2019-12-10 16:42:00" & time <="2019-12-10 16:57:00"),] 
+exp15 <- still[with(still, time >="2019-12-10 15:01:00" & time <="2019-12-10 16:18:00"),]
+
+exps.still.4c6 <- list(exp13, exp14, exp15)
+
+#node 42A
+exp16 <- still[with(still, time >="2019-12-10 18:51:00" & time <="2019-12-10 19:06:00"),] 
+exp21 <- still[with(still, time >="2019-12-10 19:30:00" & time <="2019-12-10 19:45:00"),] 
+exp26 <- still[with(still, time >="2019-12-10 20:31:00" & time <="2019-12-10 20:46:00"),]
+
+exps.still.42a <- list(exp16, exp21, exp26)
+```
+
+10. Still -- Dec 11
+```{r}
+#node B8
+exp31 <- still[with(still, time >="2019-12-11 13:50:00" & time <="2019-12-11 14:14:00"),] 
+exp36 <- still[with(still, time >="2019-12-11 15:32:00" & time <="2019-12-11 15:47:00"),] 
+exp41 <- still[with(still, time >="2019-12-11 14:37:00" & time <="2019-12-11 14:52:00"),]
+
+exps.still.b8 <- list(exp31, exp36, exp41)
+
+#node C0
+exp47 <- still[with(still, time >="2019-12-11 16:01:00" & time <="2019-12-11 16:16:00"),] 
+exp52 <- still[with(still, time >="2019-12-11 16:18:00" & time <="2019-12-11 16:33:00"),] 
+exp57 <- still[with(still, time >="2019-12-11 16:55:00" & time <="2019-12-11 17:10:00"),]
+
+exps.still.c0 <- list(exp47, exp52, exp57)
+
+```
+
+
+
+#Convert to spatial
+```{r}
+####exp1####
+exp1.sp <- exp1[c("ID", "lat", "lng")]
+coordinates(exp1.sp) <- c("lng", "lat")
+plot(exp1.sp) 
+
+
+#plot by color
+exp1.sp@data$ID <- as.factor(exp1.sp@data$ID)
+plot(exp1.sp, col = exp1.sp@data$ID, pch = 16) 
+
+#MCP
+exp1.mcp <- mcp(exp1.sp, percent = 100, unin = "m", unout = "m2") #all points used, no outliers excluded
+exp1.mcp
+
+```
+
+#Plot
+```{r}
+#turn spatial data frame to regular data frame to plot in ggmap
+exp1.geo <- data.frame(id = exp1.sp@data$ID, # add individual identifier
+                            exp1.sp@coords)
+exp1.map <-ggmap(mybasemap) + 
+  geom_point(data = exp1.geo, aes(x = lng, y = lat, colour = as.factor(id))) +
+  geom_polygon(data = fortify(exp1.mcp), aes(x = long, y = lat, color=id, fill=id), alpha=0.2) +
+  geom_point(data = nodes, aes(x = lng, y = lat), color="white", shape = 8) +
+  geom_point(data = node_4C6, aes(x = lng, y = lat), color = "white", shape = 19, alpha =0.3, size=10)+
+  theme(legend.position = c(0.80, 0.80)) +
+  labs(x = "Longitude", y = "Latitude") +
+  scale_colour_manual(name = "Tag ID",
+                      values = c("blue", "red", "green", "yellow")) +
+  scale_fill_manual(values = c("blue", "red", "green", "yellow"), guide=FALSE) +
+  geom_text(x=-81.355, y=27.194, label = "4C6: platform 1 - ground - horizontal")
+
+exp1.map
+
+ggsave("exp1.png", plot = exp1.map, width=150, height=150, units="mm", dpi=300)
+
+```
+
+
+#exp3
+```{r}
+exp3.sp <- exp3[c("ID", "lat", "lng")]
+coordinates(exp3.sp) <- c("lng", "lat")
+
+#MCP
+exp3.mcp <- mcp(exp3.sp, percent = 100, unin = "m", unout = "m2") #all points used, no outliers excluded
+exp3.mcp
+
+exp3.geo <- data.frame(id = exp3.sp@data$ID, # add individual identifier
+                            exp3.sp@coords)
+
+exp3.map <-ggmap(mybasemap) + 
+  geom_point(data = exp3.geo, aes(x = lng, y = lat, colour = as.factor(id))) +
+  geom_polygon(data = fortify(exp3.mcp), aes(x = long, y = lat, color=id, fill=id), alpha=0.2) +
+  geom_point(data = nodes, aes(x = lng, y = lat), color="white", shape = 8) +
+  geom_point(data = node_4C6, aes(x = lng, y = lat), color = "white", shape = 19, alpha =0.3, size=10)+
+  theme(legend.position = c(0.80, 0.80)) +
+  labs(x = "Longitude", y = "Latitude") +
+  scale_colour_manual(name = "Tag ID",
+                      values = c("blue", "red", "green", "yellow")) +
+  scale_fill_manual(values = c("blue", "red", "green", "yellow"), guide=FALSE) +
+  geom_text(x=-81.355, y=27.194, label = "4C6: platform 1 - medium - horizontal")
+
+exp3.map
+
+ggsave("exp3.png", plot = exp3.map, width=150, height=150, units="mm", dpi=300)
+```
+
+#exp5
+```{r}
+exp5.sp <- exp5[c("ID", "lat", "lng")]
+coordinates(exp5.sp) <- c("lng", "lat")
+
+#MCP
+exp5.mcp <- mcp(exp5.sp, percent = 100, unin = "m", unout = "m2") #all points used, no outliers excluded
+exp5.mcp
+
+exp5.geo <- data.frame(id = exp5.sp@data$ID, # add individual identifier
+                            exp5.sp@coords)
+
+exp5.map <-ggmap(mybasemap) + 
+  geom_point(data = exp5.geo, aes(x = lng, y = lat, colour = as.factor(id))) +
+  geom_polygon(data = fortify(exp5.mcp), aes(x = long, y = lat, color=id, fill=id), alpha=0.2) +
+  geom_point(data = nodes, aes(x = lng, y = lat), color="white", shape = 8) +
+  geom_point(data = node_4C6, aes(x = lng, y = lat), color = "white", shape = 19, alpha =0.3, size=10)+
+  theme(legend.position = c(0.80, 0.80)) +
+  labs(x = "Longitude", y = "Latitude") +
+  scale_colour_manual(name = "Tag ID",
+                      values = c("blue", "red", "green", "yellow")) +
+  scale_fill_manual(values = c("blue", "red", "green", "yellow"), guide=FALSE) +
+  geom_text(x=-81.355, y=27.194, label = "4C6: platform 1 - high - horizontal")
+
+exp5.map
+
+ggsave("exp5.png", plot = exp5.map, width=150, height=150, units="mm", dpi=300)
+```
+
+
+#exp7
+```{r}
+exp7.sp <- exp7[c("ID", "lat", "lng")]
+coordinates(exp7.sp) <- c("lng", "lat")
+
+#MCP
+exp7.mcp <- mcp(exp7.sp, percent = 100, unin = "m", unout = "m2") #all points used, no outliers excluded
+exp7.mcp
+
+exp7.geo <- data.frame(id = exp7.sp@data$ID, # add individual identifier
+                            exp7.sp@coords)
+
+proj4string(exp7.mcp) <- CRS( "+proj=utm +zone=17 +ellps=GRS80 +datum=NAD83" )
+
+exp7.map <-ggmap(mybasemap) + 
+  geom_point(data = exp7.geo, aes(x = lng, y = lat, colour = as.factor(id))) +
+  geom_polygon(data = fortify(exp7.mcp), aes(x = long, y = lat, color=id, fill=id), alpha=0.2) +
+  geom_point(data = nodes, aes(x = lng, y = lat), color="white", shape = 8) +
+  geom_point(data = node_4C6, aes(x = lng, y = lat), color = "white", shape = 19, alpha =0.3, size=10)+
+  theme(legend.position = c(0.80, 0.80)) +
+  labs(x = "Longitude", y = "Latitude") +
+  scale_colour_manual(name = "Tag ID",
+                      values = c("blue", "red", "green", "yellow")) +
+  scale_fill_manual(values = c("blue", "red", "green", "yellow"), guide=FALSE) +
+  geom_text(x=-81.355, y=27.194, label = "4C6: platform 1 - high - vertical")
+
+exp7.map
+
+ggsave("exp7.png", plot = exp7.map, width=150, height=150, units="mm", dpi=300)
+```
+
+#exp9
+```{r}
+exp9.sp <- exp9[c("ID", "lat", "lng")]
+coordinates(exp9.sp) <- c("lng", "lat")
+
+#MCP
+exp9.mcp <- mcp(exp9.sp, percent = 100, unin = "m", unout = "m2") #all points used, no outliers excluded
+exp9.mcp
+
+exp9.geo <- data.frame(id = exp9.sp@data$ID, # add individual identifier
+                            exp9.sp@coords)
+
+exp9.map <-ggmap(mybasemap) + 
+  geom_point(data = exp9.geo, aes(x = lng, y = lat, colour = as.factor(id))) +
+  geom_polygon(data = fortify(exp9.mcp), aes(x = long, y = lat, color=id, fill=id), alpha=0.2) +
+  geom_point(data = nodes, aes(x = lng, y = lat), color="white", shape = 8) +
+  geom_point(data = node_4C6, aes(x = lng, y = lat), color = "white", shape = 19, alpha =0.3, size=10)+
+  theme(legend.position = c(0.80, 0.80)) +
+  labs(x = "Longitude", y = "Latitude") +
+  scale_colour_manual(name = "Tag ID",
+                      values = c("blue", "red", "green", "yellow")) +
+  scale_fill_manual(values = c("blue", "red", "green", "yellow"), guide=FALSE) +
+  geom_text(x=-81.355, y=27.194, label = "4C6: platform 1 - medium - vertical")
+
+exp9.map
+
+ggsave("exp9.png", plot = exp9.map, width=150, height=150, units="mm", dpi=300)
+```
+
+#exp11
+```{r}
+exp11.sp <- exp11[c("ID", "lat", "lng")]
+coordinates(exp11.sp) <- c("lng", "lat")
+
+#MCP
+exp11.mcp <- mcp(exp11.sp, percent = 100, unin = "m", unout = "m2") #all points used, no outliers excluded
+exp11.mcp
+
+exp11.geo <- data.frame(id = exp11.sp@data$ID, # add individual identifier
+                            exp11.sp@coords)
+
+exp11.map <-ggmap(mybasemap) + 
+  geom_point(data = exp11.geo, aes(x = lng, y = lat, colour = as.factor(id))) +
+  geom_polygon(data = fortify(exp11.mcp), aes(x = long, y = lat, color=id, fill=id), alpha=0.2) +
+  geom_point(data = nodes, aes(x = lng, y = lat), color="white", shape = 8) +
+  geom_point(data = node_4C6, aes(x = lng, y = lat), color = "white", shape = 19, alpha =0.3, size=10)+
+  theme(legend.position = c(0.80, 0.80)) +
+  labs(x = "Longitude", y = "Latitude") +
+  scale_colour_manual(name = "Tag ID",
+                      values = c("blue", "red", "green", "yellow")) +
+  scale_fill_manual(values = c("blue", "red", "green", "yellow"), guide=FALSE) +
+  geom_text(x=-81.355, y=27.194, label = "4C6: platform 1 - low - vertical")
+
+exp11.map
+
+ggsave("exp11.png", plot = exp11.map, width=150, height=150, units="mm", dpi=300)
+```
+
+
+##########
+Need new basemap
+##########
+
+#exp17
+```{r}
+exp17.sp <- exp17[c("ID", "lat", "lng")]
+coordinates(exp17.sp) <- c("lng", "lat")
+
+#new basemap
+mybasemap_exp17 <- get_map(location = c(lon = mean(exp17.sp@coords[,1]) , 
+                                  lat = mean(exp17.sp@coords[,2])), 
+                     source = "google", zoom = 17, maptype = 'satellite')
+
+#MCP
+exp17.mcp <- mcp(exp17.sp, percent = 100, unin = "m", unout = "m2") #all points used, no outliers excluded
+exp17.mcp
+
+exp17.geo <- data.frame(id = exp17.sp@data$ID, # add individual identifier
+                            exp17.sp@coords)
+
+exp17.map <-ggmap(mybasemap_exp17) + 
+  geom_point(data = exp17.geo, aes(x = lng, y = lat, colour = as.factor(id))) +
+  geom_polygon(data = fortify(exp17.mcp), aes(x = long, y = lat, color=id, fill=id), alpha=0.2) +
+  geom_point(data = nodes, aes(x = lng, y = lat), color="white", shape = 8) +
+  geom_point(data = node_42A, aes(x = lng, y = lat), color = "white", shape = 19, alpha =0.3, size=10)+
+  theme(legend.position = c(0.80, 0.80)) +
+  labs(x = "Longitude", y = "Latitude") +
+  scale_colour_manual(name = "Tag ID",
+                      values = c("blue", "red", "green", "yellow")) +
+  scale_fill_manual(values = c("blue", "red", "green", "yellow"), guide=FALSE) +
+  geom_text(x=-81.356, y=27.1962, label = "42A: platform 1 - ground - horizontal")
+
+exp17.map
+
+ggsave("exp17.png", plot = exp17.map, width=150, height=150, units="mm", dpi=300)
+```
+
+#exp19
+```{r}
+exp19.sp <- exp19[c("ID", "lat", "lng")]
+coordinates(exp19.sp) <- c("lng", "lat")
+
+#MCP
+exp19.mcp <- mcp(exp19.sp, percent = 100, unin = "m", unout = "m2") #all points used, no outliers excluded
+exp19.mcp
+
+exp19.geo <- data.frame(id = exp19.sp@data$ID, # add individual identifier
+                            exp19.sp@coords)
+
+exp19.map <-ggmap(mybasemap_exp17) + 
+  geom_point(data = exp19.geo, aes(x = lng, y = lat, colour = as.factor(id))) +
+  geom_polygon(data = fortify(exp19.mcp), aes(x = long, y = lat, color=id, fill=id), alpha=0.2) +
+  geom_point(data = nodes, aes(x = lng, y = lat), color="white", shape = 8) +
+  geom_point(data = node_42A, aes(x = lng, y = lat), color = "white", shape = 19, alpha =0.3, size=10)+
+  theme(legend.position = c(0.80, 0.80)) +
+  labs(x = "Longitude", y = "Latitude") +
+  scale_colour_manual(name = "Tag ID",
+                      values = c("blue", "red", "green", "yellow")) +
+  scale_fill_manual(values = c("blue", "red", "green", "yellow"), guide=FALSE) +
+  geom_text(x=-81.356, y=27.1962, label = "42A: platform 1 - ground - vertical")
+
+exp19.map
+
+ggsave("exp19.png", plot = exp19.map, width=150, height=150, units="mm", dpi=300)
+```
+
+#exp22
+```{r}
+exp22.sp <- exp22[c("ID", "lat", "lng")]
+coordinates(exp22.sp) <- c("lng", "lat")
+
+#MCP
+exp22.mcp <- mcp(exp22.sp, percent = 100, unin = "m", unout = "m2") #all points used, no outliers excluded
+exp22.mcp
+
+exp22.geo <- data.frame(id = exp22.sp@data$ID, # add individual identifier
+                            exp22.sp@coords)
+
+exp22.map <-ggmap(mybasemap_exp17) + 
+  geom_point(data = exp22.geo, aes(x = lng, y = lat, colour = as.factor(id))) +
+  geom_polygon(data = fortify(exp22.mcp), aes(x = long, y = lat, color=id, fill=id), alpha=0.2) +
+  geom_point(data = nodes, aes(x = lng, y = lat), color="white", shape = 8) +
+  geom_point(data = node_42A, aes(x = lng, y = lat), color = "white", shape = 19, alpha =0.3, size=10)+
+  theme(legend.position = c(0.80, 0.80)) +
+  labs(x = "Longitude", y = "Latitude") +
+  scale_colour_manual(name = "Tag ID",
+                      values = c("blue", "red", "green", "yellow")) +
+  scale_fill_manual(values = c("blue", "red", "green", "yellow"), guide=FALSE) +
+  geom_text(x=-81.356, y=27.1962, label = "42A: platform 1 - medium - horizontal")
+
+exp22.map
+
+ggsave("exp22.png", plot = exp22.map, width=150, height=150, units="mm", dpi=300)
+```
+
+
+
+###########
+Platform 2
+###########
+#exp2
+```{r}
+exp2.sp <- exp2[c("ID", "lat", "lng")]
+coordinates(exp2.sp) <- c("lng", "lat")
+
+#MCP
+exp2.mcp <- mcp(exp2.sp, percent = 100, unin = "m", unout = "m2") #all points used, no outliers excluded
+exp2.mcp
+
+exp2.geo <- data.frame(id = exp2.sp@data$ID, # add individual identifier
+                            exp2.sp@coords)
+
+exp2.map <-ggmap(mybasemap_exp6) + 
+  geom_point(data = exp2.geo, aes(x = lng, y = lat, colour = as.factor(id))) +
+  geom_polygon(data = fortify(exp2.mcp), aes(x = long, y = lat, color=id, fill=id), alpha=0.2) +
+  geom_point(data = nodes, aes(x = lng, y = lat), color="white", shape = 8) +
+  geom_point(data = node_4C6, aes(x = lng, y = lat), color = "white", shape = 19, alpha =0.3, size=10)+
+  theme(legend.position = c(0.20, 0.80)) +
+  labs(x = "Longitude", y = "Latitude") +
+  scale_colour_manual(name = "Tag ID",
+                      values = c("blue", "red", "green", "yellow")) +
+  scale_fill_manual(values = c("blue", "red", "green", "yellow"), guide=FALSE) +
+  theme(axis.text=element_text(size=14, color="black"),
+        axis.title=element_text(size=14,face="bold",color="black"),
+        axis.text.x=element_text(color="black"), 
+        axis.text.y=element_text(color="black"))+
+  geom_text(x=-81.355, y=27.194, label = "4C6: platform 2 - ground - horizontal", col = "white")
+
+exp2.map
+
+ggsave("exp2.png", plot = exp2.map, width=150, height=150, units="mm", dpi=300)
+```
+
+#exp4
+```{r}
+exp4.sp <- exp4[c("ID", "lat", "lng")]
+coordinates(exp4.sp) <- c("lng", "lat")
+
+#MCP
+exp4.mcp <- mcp(exp4.sp, percent = 100, unin = "m", unout = "m2") #all points used, no outliers excluded
+exp4.mcp
+
+exp4.geo <- data.frame(id = exp4.sp@data$ID, # add individual identifier
+                            exp4.sp@coords)
+
+exp4.map <-ggmap(mybasemap_exp6) + 
+  geom_point(data = exp4.geo, aes(x = lng, y = lat, colour = as.factor(id))) +
+  geom_polygon(data = fortify(exp4.mcp), aes(x = long, y = lat, color=id, fill=id), alpha=0.2) +
+  geom_point(data = nodes, aes(x = lng, y = lat), color="white", shape = 8) +
+  geom_point(data = node_4C6, aes(x = lng, y = lat), color = "white", shape = 19, alpha =0.3, size=10)+
+  theme(legend.position = c(0.20, 0.80)) +
+  labs(x = "Longitude", y = "Latitude") +
+  scale_colour_manual(name = "Tag ID",
+                      values = c("blue", "red", "green", "yellow")) +
+  scale_fill_manual(values = c("blue", "red", "green", "yellow"), guide=FALSE) +
+    theme(axis.text=element_text(size=14, color="black"),
+        axis.title=element_text(size=14,face="bold",color="black"),
+        axis.text.x=element_text(color="black"), 
+        axis.text.y=element_text(color="black"))+
+  geom_text(x=-81.355, y=27.194, label = "4C6: platform 2 - medium - horizontal", col = "white")
+
+exp4.map
+
+ggsave("exp4.png", plot = exp4.map, width=150, height=150, units="mm", dpi=300)
+```
+
+#exp6
+```{r}
+exp6.sp <- exp6[c("ID", "lat", "lng")]
+coordinates(exp6.sp) <- c("lng", "lat")
+
+
+mybasemap_exp6 <- get_map(location = c(lon = mean(exp6.sp@coords[,1]) , 
+                                  lat = mean(exp6.sp@coords[,2])), 
+                     source = "google", zoom = 17, maptype = 'satellite')
+
+#MCP
+exp6.mcp <- mcp(exp6.sp, percent = 100, unin = "m", unout = "m2") #all points used, no outliers excluded
+exp6.mcp
+
+exp6.geo <- data.frame(id = exp6.sp@data$ID, # add individual identifier
+                            exp6.sp@coords)
+
+exp6.map <-ggmap(mybasemap_exp6) + 
+  geom_point(data = exp6.geo, aes(x = lng, y = lat, colour = as.factor(id))) +
+  geom_polygon(data = fortify(exp6.mcp), aes(x = long, y = lat, color=id, fill=id), alpha=0.2) +
+  geom_point(data = nodes, aes(x = lng, y = lat), color="white", shape = 8) +
+  geom_point(data = node_4C6, aes(x = lng, y = lat), color = "white", shape = 19, alpha =0.3, size=10)+
+  theme(legend.position = c(0.20, 0.80)) +
+  labs(x = "Longitude", y = "Latitude") +
+  scale_colour_manual(name = "Tag ID",
+                      values = c("blue", "red", "green", "yellow")) +
+  scale_fill_manual(values = c("blue", "red", "green", "yellow"), guide=FALSE) +
+    theme(axis.text=element_text(size=14, color="black"),
+        axis.title=element_text(size=14,face="bold",color="black"),
+        axis.text.x=element_text(color="black"), 
+        axis.text.y=element_text(color="black"))+
+  geom_text(x=-81.355, y=27.194, label = "4C6: platform 2 - high - horizontal", col = "white")
+
+exp6.map
+
+ggsave("exp6.png", plot = exp6.map, width=150, height=150, units="mm", dpi=300)
+```
+
+#exp8
+```{r}
+exp8.sp <- exp8[c("ID", "lat", "lng")]
+coordinates(exp8.sp) <- c("lng", "lat")
+
+
+mybasemap_exp8 <- get_map(location = c(lon = mean(exp6.sp@coords[,1]) , 
+                                  lat = mean(exp6.sp@coords[,2])), 
+                     source = "google", zoom = 17, maptype = 'satellite')
+
+#MCP
+exp8.mcp <- mcp(exp8.sp, percent = 100, unin = "m", unout = "m2") #all points used, no outliers excluded
+exp8.mcp
+
+exp8.geo <- data.frame(id = exp8.sp@data$ID, # add individual identifier
+                            exp8.sp@coords)
+
+exp8.map <-ggmap(mybasemap_exp8) + 
+  geom_point(data = exp8.geo, aes(x = lng, y = lat, colour = as.factor(id))) +
+  geom_polygon(data = fortify(exp8.mcp), aes(x = long, y = lat, color=id, fill=id), alpha=0.2) +
+  geom_point(data = nodes, aes(x = lng, y = lat), color="white", shape = 8) +
+  geom_point(data = node_4C6, aes(x = lng, y = lat), color = "white", shape = 19, alpha =0.3, size=10)+
+  theme(legend.position = c(0.80, 0.80)) +
+  labs(x = "Longitude", y = "Latitude") +
+  scale_colour_manual(name = "Tag ID",
+                      values = c("blue", "red", "green", "yellow")) +
+  scale_fill_manual(values = c("blue", "red", "green", "yellow"), guide=FALSE) +
+  geom_text(x=-81.355, y=27.194, label = "4C6: platform 2 - high - vertical")
+
+exp8.map
+
+ggsave("exp8.png", plot = exp8.map, width=150, height=150, units="mm", dpi=300)
+```
+
+
+##############
+#Summary stats
+```{r}
+library(raster)
+
+#MCP size
+exp1.mcp@data$area
+exp1.mcp
+
+#MCP centroid
+library(rgeos)
+library(Rmisc)
+
+exp1.mcp.cent <- gCentroid(exp1.mcp)
+exp1.mcp.cent
+
+summarySE(exp1, measurevar = "lat", groupvars = "ID")
+summarySE(exp1, measurevar = "lng", groupvars = "ID")
+
+
+#Distance between
+exp1.dist <- pointDistance(exp1.sp, act.loc.4c6.sp, lonlat = T) 
+View(exp1.dist) #in meters
+mean(exp1.dist) #74.81059
+range(exp1.dist) #1.959825~220.878009
+
+exp1.dist.cent <- pointDistance(exp1.mcp.cent, act.loc.4c6.sp, lonlat=T)
+View(exp1.dist.cent)
+
+exp1.dist.df <- as.data.frame(exp1.dist)
+exp1.dist.df$TagID <- exp1$ID
+View(exp1.dist.df)
+
+
+
+summarySE(exp1.dist.df, measurevar = "exp1.dist", groupvars = "TagID", na.rm = T)
+```
+
+
+
+
+
+
+############################
+############################
+Remove node 4C6
+############################
+############################
+
+```{r}
+t1_4c6 <- read.csv("C:/Users/young/Documents/MS cell track methods/CTTMethods/node4c6/tag_61335578_channel_2_freq_30S_4c6.csv") 
+t2_4c6 <- read.csv("C:/Users/young/Documents/MS cell track methods/CTTMethods/node4c6/tag_61664C61_channel_2_freq_30S_4c6.csv") 
+t3_4c6<- read.csv("C:/Users/young/Documents/MS cell track methods/CTTMethods/node4c6/tag_6133331E_channel_2_freq_30S_4c6.csv") 
+t4_4c6 <- read.csv("C:/Users/young/Documents/MS cell track methods/CTTMethods/node4c6/tag_61336634_channel_2_freq_30S_4c6.csv") 
+t5_4c6 <- read.csv("C:/Users/young/Documents/MS cell track methods/CTTMethods/node4c6/tag_61526633_channel_2_freq_30S_4c6.csv")
+t6_4c6 <- read.csv("C:/Users/young/Documents/MS cell track methods/CTTMethods/node4c6/tag_6166194C_channel_2_freq_30S_4c6.csv") 
+t7_4c6 <- read.csv("C:/Users/young/Documents/MS cell track methods/CTTMethods/node4c6/tag_6134074B_channel_2_freq_30S_4c6.csv") 
+t8_4c6 <- read.csv("C:/Users/young/Documents/MS cell track methods/CTTMethods/node4c6/tag_61611E2D_channel_2_freq_30S_4c6.csv") 
+t9_4c6 <- read.csv("C:/Users/young/Documents/MS cell track methods/CTTMethods/node4c6/tag_61664B1E_channel_2_freq_30S_4c6.csv") 
+t10_4c6 <- read.csv("C:/Users/young/Documents/MS cell track methods/CTTMethods/node4c6/tag_6166194B_channel_2_freq_30S_4c6.csv") 
+
+t1_4c6$ID <- "61335578"
+t1_4c6$time <- as.POSIXct(t1_4c6$Time)
+
+t2_4c6$ID <- "61664C61"
+t2_4c6$time <- as.POSIXct(t2_4c6$Time)
+
+t3_4c6$ID <- "6133331E"
+t3_4c6$time <- as.POSIXct(t3_4c6$Time)
+
+t4_4c6$ID <- "61336634"
+t4_4c6$time <- as.POSIXct(t4_4c6$Time)
+
+t5_4c6$ID <- "61526633"
+t5_4c6$time <- as.POSIXct(t5_4c6$Time)
+
+t6_4c6$ID <- "6166194C"
+t6_4c6$time <- as.POSIXct(t6_4c6$Time)
+
+t8_4c6$ID <- "6134074B"
+t8_4c6$time <- as.POSIXct(t8_4c6$Time)
+
+t7_4c6$ID <- "61611E2D"
+t7_4c6$time <- as.POSIXct(t7_4c6$Time)
+
+t9_4c6$ID <- "61664B1E"
+t9_4c6$time <- as.POSIXct(t9_4c6$Time)
+
+t10_4c6$ID <- "6166194B"
+t10_4c6$time <- as.POSIXct(t10_4c6$Time)
+```
+
+```{r}
+platform1_4c6 <- rbind(t1_4c6,t8_4c6,t2_4c6,t7_4c6)
+
+
+exp1_4c6 <- platform1_4c6[with(platform1_4c6, time >="2019-12-10 15:01:00" & time <="2019-12-10 15:16:00"),] 
+exp3_4c6 <- platform1_4c6[with(platform1_4c6, time >="2019-12-10 15:17:00" & time <="2019-12-10 15:32:00"),] 
+exp5_4c6 <- platform1_4c6[with(platform1_4c6, time >="2019-12-10 16:42:00" & time <="2019-12-10 16:57:00"),]
+exp7_4c6 <- platform1_4c6[with(platform1_4c6, time >="2019-12-10 17:00:00" & time <="2019-12-10 17:19:00"),]
+exp9_4c6 <- platform1_4c6[with(platform1_4c6, time >="2019-12-10 15:40:00" & time <="2019-12-10 15:55:00"),]
+exp11_4c6 <- platform1_4c6[with(platform1_4c6, time >="2019-12-10 17:20:00" & time <="2019-12-10 17:35:00"),]
+```
+
+```{r}
+####exp1####
+exp1_4c6.sp <- exp1_4c6[c("ID", "lat", "lng")]
+coordinates(exp1_4c6.sp) <- c("lng", "lat")
+plot(exp1_4c6.sp)
+
+#plot by color
+exp1_4c6.sp@data$ID <- as.factor(exp1_4c6.sp@data$ID)
+plot(exp1_4c6.sp, col = exp1_4c6.sp@data$ID, pch = 16) 
+
+#MCP
+exp1_4c6.mcp <- mcp(exp1_4c6.sp, percent = 100, unin = "m", unout = "m2") #all points used, no outliers excluded
+exp1_4c6.mcp
+
+```
+
+#exp 1_4c6
+```{r}
+exp1_4c6.geo <- data.frame(id = exp1_4c6.sp@data$ID, 
+                            exp1_4c6.sp@coords)
+exp1_4c6.map <-ggmap(mybasemap) + 
+  geom_point(data = exp1_4c6.geo, aes(x = lng, y = lat, colour = as.factor(id))) +
+  geom_polygon(data = fortify(exp1_4c6.mcp), aes(x = long, y = lat, color=id, fill=id), alpha=0.2) +
+  geom_point(data = nodes, aes(x = lng, y = lat), color="white", shape = 8) +
+  geom_point(data = node_4C6, aes(x = lng, y = lat), color = "white", shape = 19, alpha =0.3, size=10)+
+  theme(legend.position = c(0.80, 0.80)) +
+  labs(x = "Longitude", y = "Latitude") +
+  scale_colour_manual(name = "Tag ID",
+                      values = c("blue", "red", "yellow", "green")) +
+  scale_fill_manual(values = c("blue", "red", "yellow", "green"), guide=FALSE) +
+  geom_text(x=-81.355, y=27.194, label = "4C6: platform 1 - ground - horizontal")
+
+exp1_4c6.map
+
+ggsave("exp1_4c6.png", plot = exp1_4c6.map, width=150, height=150, units="mm", dpi=300)
+
+```
+
+#exp3_4c6
+```{r}
+exp3_4c6.sp <- exp3_4c6[c("ID", "lat", "lng")]
+coordinates(exp3_4c6.sp) <- c("lng", "lat")
+
+#MCP
+exp3_4c6.mcp <- mcp(exp3_4c6.sp, percent = 100, unin = "m", unout = "m2") #all points used, no outliers excluded
+exp3_4c6.mcp
+
+exp3_4c6.geo <- data.frame(id = exp3_4c6.sp@data$ID, # add individual identifier
+                            exp3_4c6.sp@coords)
+
+exp3_4c6.map <-ggmap(mybasemap) + 
+  geom_point(data = exp3_4c6.geo, aes(x = lng, y = lat, colour = as.factor(id))) +
+  geom_polygon(data = fortify(exp3_4c6.mcp), aes(x = long, y = lat, color=id, fill=id), alpha=0.2) +
+  geom_point(data = nodes, aes(x = lng, y = lat), color="white", shape = 8) +
+  geom_point(data = node_4C6, aes(x = lng, y = lat), color = "white", shape = 19, alpha =0.3, size=10)+
+  theme(legend.position = c(0.80, 0.80)) +
+  labs(x = "Longitude", y = "Latitude") +
+  scale_colour_manual(name = "Tag ID",
+                      values = c("blue", "red", "yellow", "green")) +
+  scale_fill_manual(values = c("blue", "red", "yellow", "green"), guide=FALSE) +
+  geom_text(x=-81.355, y=27.194, label = "4C6: platform 1 - medium - horizontal")
+
+exp3_4c6.map
+
+ggsave("exp3_4c6.png", plot = exp3_4c6.map, width=150, height=150, units="mm", dpi=300)
+```
+
+#exp5_4c6
+```{r}
+exp5_4c6.sp <- exp5_4c6[c("ID", "lat", "lng")]
+coordinates(exp5_4c6.sp) <- c("lng", "lat")
+
+#MCP
+exp5_4c6.mcp <- mcp(exp5_4c6.sp, percent = 100, unin = "m", unout = "m2") #all points used, no outliers excluded
+exp5_4c6.mcp
+
+exp5_4c6.geo <- data.frame(id = exp5_4c6.sp@data$ID, # add individual identifier
+                            exp5_4c6.sp@coords)
+
+mybasemap_4c6 <- get_map(location = c(lon = mean(exp5_4c6.sp@coords[,1]) , 
+                                  lat = mean(exp5_4c6.sp@coords[,2])), 
+                     source = "google", zoom = 17, maptype = 'satellite')
+
+exp5_4c6.map <-ggmap(mybasemap_4c6) + 
+  geom_point(data = exp5_4c6.geo, aes(x = lng, y = lat, colour = as.factor(id))) +
+  geom_polygon(data = fortify(exp5_4c6.mcp), aes(x = long, y = lat, color=id, fill=id), alpha=0.2) +
+  geom_point(data = nodes, aes(x = lng, y = lat), color="white", shape = 8) +
+  geom_point(data = node_4C6, aes(x = lng, y = lat), color = "white", shape = 19, alpha =0.3, size=10)+
+  theme(legend.position = c(0.80, 0.80)) +
+  labs(x = "Longitude", y = "Latitude") +
+  scale_colour_manual(name = "Tag ID",
+                      values = c("blue", "red", "yellow", "green")) +
+  scale_fill_manual(values = c("blue", "red", "yellow", "green"), guide=FALSE) +
+  geom_text(x=-81.355, y=27.194, label = "4C6: platform 1 - medium - horizontal")
+
+exp5_4c6.map
+
+ggsave("exp5_4c6.png", plot = exp5_4c6.map, width=150, height=150, units="mm", dpi=300)
+```

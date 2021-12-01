@@ -1,0 +1,289 @@
+---
+title: "Untitled"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+```{r}
+library(sp)
+library(adehabitatHR)
+library(ggplot2)
+library(ggmap)
+library(raster)
+library(Rmisc)
+library(rgeos)
+```
+
+
+
+```{r}
+exp1.sp <- exp1[c("ID", "lat", "lng")]
+coordinates(exp1.sp) <- c("lng", "lat")
+plot(exp1.sp) 
+
+#MCP
+exp1.mcp <- adehabitatHR::mcp(exp1.sp, percent = 100, unin = "m", unout = "m2") #all points used, no outliers excluded
+exp1.mcp
+
+#MCP size
+exp1.mcp@data$area
+exp1.mcp
+
+#Distance between
+exp1.dist <- pointDistance(exp1.sp, act.loc.4c6.sp, lonlat = T)
+View(exp1.dist)
+mean(exp1.dist) #74.81059
+range(exp1.dist) #1.959825~220.878009
+sd(exp1.dist)/sqrt(length(exp1.dist)) #5.410847
+
+
+exps.p1.4c6 <- list(exp1, exp3, exp5, exp7, exp9, exp11) #all the data frames into list
+
+exps.p1.4c6.sp <- lapply(exps.p1.4c6, function(x) x[c("ID", "lat", "lng")])
+
+exps.p1.4c6.sp2 <- lapply(exps.p1.4c6.sp, function(x) SpatialPointsDataFrame(x[,c("lng", "lat")], x))
+
+exps.p1.4c6.dist <- lapply(exps.p1.4c6.sp2, function(x) pointDistance(x, act.loc.4c6.sp, lonlat = T)) 
+
+lapply(exps.p1.4c6.dist, mean)
+lapply(exps.p1.4c6.dist, function(x) sd(x)/sqrt(length(x)))
+lapply(exps.p1.4c6.dist, sd)
+```
+
+```{r}
+exps.p1.42a <- list(exp17, exp19, exp22, exp24, exp27, exp29) #all the data frames into list
+
+exps.p1.42a.sp <- lapply(exps.p1.42a, function(x) x[c("ID", "lat", "lng")])
+
+exps.p1.42a.sp2 <- lapply(exps.p1.42a.sp, function(x) SpatialPointsDataFrame(x[,c("lng", "lat")], x))
+
+exps.p1.42a.dist <- lapply(exps.p1.42a.sp2, function(x) pointDistance(x, act.loc.42a.sp, lonlat = T)) 
+
+lapply(exps.p1.42a.dist, mean)
+lapply(exps.p1.42a.dist, function(x) sd(x)/sqrt(length(x)))
+lapply(exps.p1.42a.dist, sd)
+```
+
+
+```{r}
+exps.p1.b8 <- list(exp32, exp34, exp37, exp39, exp42, exp44) #all the data frames into list
+
+exps.p1.b8.sp <- lapply(exps.p1.b8, function(x) x[c("ID", "lat", "lng")])
+
+exps.p1.b8.sp2 <- lapply(exps.p1.b8.sp, function(x) SpatialPointsDataFrame(x[,c("lng", "lat")], x))
+
+exps.p1.b8.dist <- lapply(exps.p1.b8.sp2, function(x) pointDistance(x, act.loc.b8.sp, lonlat = T)) 
+
+lapply(exps.p1.b8.dist, mean)
+lapply(exps.p1.b8.dist, function(x) sd(x)/sqrt(length(x)))
+lapply(exps.p1.b8.dist, sd)
+```
+
+```{r}
+exps.p1.c0 <- list(exp48, exp50, exp53, exp55, exp58, exp60) #all the data frames into list
+
+exps.p1.c0.sp <- lapply(exps.p1.c0, function(x) x[c("ID", "lat", "lng")])
+
+exps.p1.c0.sp2 <- lapply(exps.p1.c0.sp, function(x) SpatialPointsDataFrame(x[,c("lng", "lat")], x))
+
+exps.p1.c0.dist <- lapply(exps.p1.c0.sp2, function(x) pointDistance(x, act.loc.c0.sp, lonlat = T)) 
+
+lapply(exps.p1.c0.dist, mean)
+lapply(exps.p1.c0.dist, function(x) sd(x)/sqrt(length(x)))
+lapply(exps.p1.c0.dist, sd)
+```
+
+```{r}
+exps.p2.4c6 <- list(exp2, exp4, exp6, exp8, exp10, exp12) #all the data frames into list
+
+exps.p2.4c6.sp <- lapply(exps.p2.4c6, function(x) x[c("ID", "lat", "lng")])
+
+exps.p2.4c6.sp2 <- lapply(exps.p2.4c6.sp, function(x) SpatialPointsDataFrame(x[,c("lng", "lat")], x))
+
+exps.p2.4c6.dist <- lapply(exps.p2.4c6.sp2, function(x) pointDistance(x, act.loc.4c6.sp, lonlat = T)) 
+
+lapply(exps.p2.4c6.dist, mean)
+lapply(exps.p2.4c6.dist, function(x) sd(x)/sqrt(length(x)))
+lapply(exps.p2.4c6.dist, sd)
+```
+
+```{r}
+exps.p2.42a <- list(exp18, exp20, exp23, exp25, exp28, exp30) #all the data frames into list
+
+exps.p2.42a.sp <- lapply(exps.p2.42a, function(x) x[c("ID", "lat", "lng")])
+
+exps.p2.42a.sp2 <- lapply(exps.p2.42a.sp, function(x) SpatialPointsDataFrame(x[,c("lng", "lat")], x))
+
+exps.p2.42a.dist <- lapply(exps.p2.42a.sp2, function(x) pointDistance(x, act.loc.42a.sp, lonlat = T)) 
+
+lapply(exps.p2.42a.dist, mean)
+lapply(exps.p2.42a.dist, function(x) sd(x)/sqrt(length(x)))
+lapply(exps.p2.42a.dist, sd)
+```
+
+```{r}
+exps.p2.b8 <- list(exp33, exp35, exp38, exp40, exp43, exp45) #all the data frames into list
+
+exps.p2.b8.sp <- lapply(exps.p2.b8, function(x) x[c("ID", "lat", "lng")])
+
+exps.p2.b8.sp2 <- lapply(exps.p2.b8.sp, function(x) SpatialPointsDataFrame(x[,c("lng", "lat")], x))
+
+exps.p2.b8.dist <- lapply(exps.p2.b8.sp2, function(x) pointDistance(x, act.loc.b8.sp, lonlat = T)) 
+
+lapply(exps.p2.b8.dist, mean)
+lapply(exps.p2.b8.dist, function(x) sd(x)/sqrt(length(x)))
+lapply(exps.p2.b8.dist, sd)
+```
+```{r}
+exps.p2.c0 <- list(exp49, exp51, exp54, exp56, exp59, exp61) #all the data frames into list
+
+exps.p2.c0.sp <- lapply(exps.p2.c0, function(x) x[c("ID", "lat", "lng")])
+
+exps.p2.c0.sp2 <- lapply(exps.p2.c0.sp, function(x) SpatialPointsDataFrame(x[,c("lng", "lat")], x))
+
+exps.p2.c0.dist <- lapply(exps.p2.c0.sp2, function(x) pointDistance(x, act.loc.c0.sp, lonlat = T)) 
+
+lapply(exps.p2.c0.dist, mean)
+lapply(exps.p2.c0.dist, function(x) sd(x)/sqrt(length(x)))
+lapply(exps.p2.c0.dist, sd)
+```
+
+```{r}
+exps.no.4c6 <- list(exp13, exp14, exp15) #all the data frames into list
+exps.no.4c6.sp <- lapply(exps.no.4c6, function(x) x[c("ID", "lat", "lng")])
+exps.no.4c6.sp2 <- lapply(exps.no.4c6.sp, function(x) SpatialPointsDataFrame(x[,c("lng", "lat")], x))
+exps.no.4c6.dist <- lapply(exps.no.4c6.sp2, function(x) pointDistance(x, act.loc.4c6.sp, lonlat = T)) 
+
+lapply(exps.no.4c6.dist, mean)
+lapply(exps.no.4c6.dist, function(x) sd(x)/sqrt(length(x)))
+lapply(exps.no.4c6.dist, sd)
+
+
+
+exps.no.42a <- list(exp16, exp21, exp26) #all the data frames into list
+exps.no.42a.sp <- lapply(exps.no.42a, function(x) x[c("ID", "lat", "lng")])
+exps.no.42a.sp2 <- lapply(exps.no.42a.sp, function(x) SpatialPointsDataFrame(x[,c("lng", "lat")], x))
+exps.no.42a.dist <- lapply(exps.no.42a.sp2, function(x) pointDistance(x, act.loc.42a.sp, lonlat = T)) 
+
+lapply(exps.no.42a.dist, mean)
+lapply(exps.no.42a.dist, function(x) sd(x)/sqrt(length(x)))
+lapply(exps.no.42a.dist, sd)
+
+
+
+exps.no.b8 <- list(exp31, exp36, exp41) #all the data frames into list
+exps.no.b8.sp <- lapply(exps.no.b8, function(x) x[c("ID", "lat", "lng")])
+exps.no.b8.sp2 <- lapply(exps.no.b8.sp, function(x) SpatialPointsDataFrame(x[,c("lng", "lat")], x))
+exps.no.b8.dist <- lapply(exps.no.b8.sp2, function(x) pointDistance(x, act.loc.b8.sp, lonlat = T)) 
+
+lapply(exps.no.b8.dist, mean)
+lapply(exps.no.b8.dist, function(x) sd(x)/sqrt(length(x)))
+lapply(exps.no.b8.dist, sd)
+
+
+
+exps.no.c0 <- list(exp47, exp52, exp57) #all the data frames into list
+exps.no.c0.sp <- lapply(exps.no.c0, function(x) x[c("ID", "lat", "lng")])
+exps.no.c0.sp2 <- lapply(exps.no.c0.sp, function(x) SpatialPointsDataFrame(x[,c("lng", "lat")], x))
+exps.no.c0.dist <- lapply(exps.no.c0.sp2, function(x) pointDistance(x, act.loc.c0.sp, lonlat = T)) 
+
+lapply(exps.no.c0.dist, mean)
+lapply(exps.no.c0.dist, function(x) sd(x)/sqrt(length(x)))
+lapply(exps.no.c0.dist, sd)
+```
+
+
+#try function
+```{r}
+exp1.sp <- exp1[c("ID", "lat", "lng")]
+coordinates(exp1.sp) <- c("lng", "lat")
+
+exp1.mcp <- mcp(exp1.sp, percent = 100, unin = "m", unout = "m2") #all points used, no outliers excluded
+exp1.mcp
+
+exp1.dist <- pointDistance(exp1.sp, act.loc.4c6.sp, lonlat = T)
+exp1.dist
+
+##
+x
+x <- exp1
+
+sp.convert <- function(x){
+  x[c("ID", "lat", "lng")]
+  }
+
+sp.convert(exp1)
+
+sp.coord <- function(x){
+  coordinates(sp.convert(x)) <- c("lng", "lat")
+}
+
+sp.coord(exp1)
+
+sp.mcp <- function(x){
+  mcp(x, percent = 100, unin="m", unout="m2")
+}
+
+sp.mcp(exp1.sp) #function
+
+
+```
+
+
+```{r}
+library(Rmisc)
+library(rgeos)
+
+
+exp1.mcp@data$area
+
+exp1.mcp.cent <- gCentroid(exp1.mcp)
+exp1.mcp.cent
+
+summarySE(exp1, measurevar = "lat", groupvars = "ID")
+summarySE(exp1, measurevar = "lng", groupvars = "ID")
+
+
+#Distance between
+exp1.dist <- pointDistance(exp1.sp, act.loc.4c6.sp, lonlat = T) 
+View(exp1.dist) #in meters
+mean(exp1.dist) #74.81059
+range(exp1.dist) #1.959825~220.878009
+
+exp1.dist.df <- as.data.frame(exp1.dist)
+exp1.dist.df$TagID <- exp1$ID
+summarySE(exp1.dist.df, measurevar = "exp1.dist", groupvars = "TagID", na.rm = T)
+
+exp1.dist.cent <- pointDistance(exp1.mcp.cent, act.loc.4c6.sp, lonlat=T) #only gives 1 value
+View(exp1.dist.cent)
+
+
+```
+```{r}
+x <- exp57
+
+x.sp <- x[c("ID", "lat", "lng")]
+coordinates(x.sp) <- c("lng", "lat")
+
+#MCP
+x.mcp <- mcp(x.sp, percent = 100, unin = "m", unout = "m2")
+x.mcp
+
+x.mcp.df <- as.data.frame(x.mcp@data$area)
+x.mcp.df
+
+
+x.agg.lat <- aggregate(lat ~ ID, data=x, FUN=mean)
+x.agg.lng <- aggregate(lng ~ ID, data=x, FUN=mean)
+x.agg <- merge(x.agg.lng, x.agg.lat, by = "ID")
+x.agg
+
+
+#Distance between
+x.dist <- pointDistance(x.sp, act.loc.c0.sp, lonlat = T) 
+x.dist.df <- as.data.frame(x.dist)
+x.dist.df$TagID <- x$ID
+summarySE(x.dist.df, measurevar = "x.dist", groupvars = "TagID", na.rm = T)
+
+```
+

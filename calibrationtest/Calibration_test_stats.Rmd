@@ -1,0 +1,30 @@
+---
+title: "Calibration Test"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(readxl)
+library(lme4)
+```
+
+
+```{r}
+setwd("~/MS cell track methods/TrackJayData")
+
+stat <- read_excel("cali_stats.xlsx")
+View(stat)
+```
+
+
+```{r}
+m0 <- lm(mcp.area ~ motor + Height + VegHeight + VegDensity + Rotation, data=stat)
+summary(m0)
+
+m1 <- lm(dist.avg ~ motor + Height + VegHeight + VegDensity + Rotation, data=stat)
+summary(m1)
+
+```
+
