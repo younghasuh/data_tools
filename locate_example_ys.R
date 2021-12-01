@@ -4,14 +4,15 @@ library(rgdal)
 library(sf)
 library(ggplot2)
 library(geosphere)
+library(readxl)
 source("functions/data_manager.R")
 source("functions/localization.R")
 
 ###EDIT THESE VALUES
-infile <- "../data/indigo"
-outpath <- "../output/"
+infile <- "../data_2021/"
+outpath <- "../output_2021/"
 
-tags <- read.csv("../data/indigo/snake_tags.csv", as.is=TRUE, na.strings=c("NA", "")) #uppercase node letters
+tags <- read_excel("../DeployedTags.xlsx") 
 
 all_data <- load_data(infile)
 beep_data <- all_data[[1]][[1]]
@@ -19,7 +20,7 @@ beep_data <- all_data[[1]][[1]]
 
 #nodes <- node_file(all_data[[2]][[1]])
 ###looking for a file with the column names NodeId, lat, lng IN THAT ORDER
-nodes <- read.csv("../data/ABS_TagTest1/all-node-locations-2020-10-05.csv", as.is=TRUE, na.strings=c("NA", ""), strip.white=TRUE) #uppercase node letters
+nodes <- read.csv("../calibrationtest/archbold-nodes_feb2020.csv", as.is=TRUE, na.strings=c("NA", ""), strip.white=TRUE) #uppercase node letters
 nodes <- nodes[,c("NodeId", "lat", "lng")]
 nodes$NodeId <- toupper(nodes$NodeId)
 
