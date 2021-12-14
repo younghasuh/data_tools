@@ -145,45 +145,45 @@ dbExecute(conn, "CREATE TABLE IF NOT EXISTS gps
     PRIMARY KEY (gps_at, station_id)
   )")
 
-sapply(projects, function(a) {
-  b <- unname(as.data.frame(a))
-  vars <- paste(dbListFields(conn, "ctt_project"), sep="", collapse=",")
-  insertnew <- dbSendQuery(conn, paste("INSERT INTO ","ctt_project"," (",vars,") VALUES ($2, $1) ON CONFLICT DO NOTHING",sep="")) 
+  sapply(projects, function(a) {
+    b <- unname(as.data.frame(a))
+    vars <- paste(dbListFields(conn, "ctt_project"), sep="", collapse=",")
+    insertnew <- dbSendQuery(conn, paste("INSERT INTO ","ctt_project"," (",vars,") VALUES ($2, $1) ON CONFLICT DO NOTHING",sep="")) 
   #it is possible you should be using dbSendStatement for all of these
-  dbBind(insertnew, params=b)
-  dbClearResult(insertnew)
+    dbBind(insertnew, params=b)
+    dbClearResult(insertnew)
   
-  basename <- a$name
-  id <- a[['id']]
-  my_stations <- getStations(project_id=id)
+    basename <- a$name
+    id <- a[['id']]
+    my_stations <- getStations(project_id=id)
   
-  mystations <- lapply(my_stations$stations, function(c) {
-    c <- as.data.frame(t(unlist(c)), stringsAsFactors=FALSE)
+    mystations <- lapply(my_stations$stations, function(c) {
+      c <- as.data.frame(t(unlist(c)), stringsAsFactors=FALSE)
     
-    c$project_id <- id
-    colnames(c)[colnames(c)=="station.db-id"] <- "db_id"
-    colnames(c)[colnames(c)=="station.id"] <- "station_id"
-    colnames(c)[colnames(c)=="deploy-at"] <- "deploy_at"
-    if (is.null(c$`end-at`)) {
-      c$end_at <- NA} else {colnames(c)[colnames(c)=="end-at"] <- "end_at"}
-    return(c)})
-  mystations <- as.data.frame(rbindlist(mystations, fill=TRUE))
-  MYSTATIONS <- list(unique(mystations$station_id))
-  mystations <- unname(mystations)
-  print(mystations)
+      c$project_id <- id
+      colnames(c)[colnames(c)=="station.db-id"] <- "db_id"
+      colnames(c)[colnames(c)=="station.id"] <- "station_id"
+      colnames(c)[colnames(c)=="deploy-at"] <- "deploy_at"
+      if (is.null(c$`end-at`)) {
+        c$end_at <- NA} else {colnames(c)[colnames(c)=="end-at"] <- "end_at"}
+      return(c)})
+    mystations <- as.data.frame(rbindlist(mystations, fill=TRUE))
+    MYSTATIONS <- list(unique(mystations$station_id))
+    mystations <- unname(mystations)
+    print(mystations)
   
-  insertnew <- dbSendQuery(conn, paste("INSERT INTO ","station (station_id)"," VALUES ($1)
-                                       ON CONFLICT DO NOTHING",sep=""))
-  dbBind(insertnew, params=MYSTATIONS)
-  dbClearResult(insertnew)
+  #insertnew <- dbSendQuery(conn, paste("INSERT INTO ","station (station_id)"," VALUES ($1)
+  #                                     ON CONFLICT DO NOTHING",sep=""))
+  #dbBind(insertnew, params=MYSTATIONS)
+  #dbClearResult(insertnew)
   
-  vars <- paste(dbListFields(conn, "ctt_project_station"), sep="", collapse=",")
-  print(vars)
-  insertnew <- dbSendQuery(conn, paste("INSERT INTO ","ctt_project_station"," (",vars,") VALUES ($1, $4, $2, $3, $5)
+    vars <- paste(dbListFields(conn, "ctt_project_station"), sep="", collapse=",")
+    print(vars)
+    insertnew <- dbSendQuery(conn, paste("INSERT INTO ","ctt_project_station"," (",vars,") VALUES ($1, $4, $2, $3, $5)
                                        ON CONFLICT DO NOTHING",sep=""))
-  dbBind(insertnew, params=mystations)
-  dbClearResult(insertnew)
-})
+    dbBind(insertnew, params=mystations)
+    dbClearResult(insertnew)
+  })
 }
 
 timeset <- function(g) {unname(sapply(g, function(h) ifelse(is.na(h), NA, paste(as.character(h), "UTC"))))}
@@ -314,19 +314,22 @@ get_data <- function(project, outpath, f=NULL) {
       station_id = station[["station"]][["id"]],
       begin = as.POSIXct(station[['deploy-at']],format="%Y-%m-%dT%H:%M:%OS",tz = "UTC", optional=TRUE)
     )
-  
     if(!is.null(station[['end-at']])) {
       kwargs[['end']] = as.POSIXct(station[['end-at']],format="%Y-%m-%dT%H:%M:%OS",tz = "UTC", optional=TRUE)
     }
+    #print("getting station file list...")
     file_info <- do.call(getStationFileList, kwargs)
     outfiles <- file_info[['files']]
+    #print(outfiles)
+    #print(paste(length(outfiles), "files available"))
   return(outfiles)})
-  
+  print("getting files available for those stations...")
   filenames <- unname(rapply(files_avail, grep, pattern = "CTT", value=TRUE))
   files_to <- filenames[!filenames %in% files_loc]
 
   allfiles <- rapply(files_avail, function(z) z %in% files_to, how = "unlist")
   ids <- unlist(files_avail)[which(allfiles) - 1]
+  print(paste("about to get", length(ids), "files"))
   file_names <- unlist(files_avail)[which(allfiles)]
 
   get_files <- function(x, y) {
@@ -337,7 +340,7 @@ get_data <- function(project, outpath, f=NULL) {
     fileinfo <- splitfile[2]
     sensorid <- unlist(strsplit(fileinfo,"-"))
     sensor <- sensorid[1]
-    faul <- which(sapply(my_stations[["stations"]], function(x) x$station$id==sensor)) 
+    faul <- which(sapply(my_stations[["stations"]], function(sta) sta$station$id==sensor)) 
     begin <- as.POSIXct(my_stations[["stations"]][[faul]]$`deploy-at`,format="%Y-%m-%dT%H:%M:%OS",tz = "UTC", optional=TRUE) 
     filenameinfo <- sensorid[2]
     file_info <- unlist(strsplit(filenameinfo, "\\."))[1]
@@ -370,9 +373,13 @@ get_data <- function(project, outpath, f=NULL) {
 failed <- Map(get_files, ids, file_names)
 return(failed)}
 
-get_my_data <- function(my_token, outpath, db_name=NULL) {
+get_my_data <- function(my_token, outpath, db_name=NULL, myproject=NULL) {
   projects <- content(POST(host, path = project, body = list(token=my_token), encode="json", verbose()), "parsed")
   projects <- projects[['projects']]
+  #print(projects)
+  if(!is.null(myproject)) {
+    projects <- list(projects[[which(sapply(projects, function(x) x[["name"]]) == myproject)]])
+  }
   if(!is.null(db_name)) {
     create_db(db_name, projects)
     failed <- lapply(projects, get_data, f=db_name, outpath=outpath)
@@ -402,13 +409,13 @@ pop <- function(x) { #this was a function written before the data file table was
   dbClearResult(insertnew)
 }
 
-update_db <- function(d, outpath) {
-  myfiles <- list.files(outpath, recursive = TRUE)
+update_db <- function(d, outpath, myproject) {
+  myfiles <- list.files(file.path(outpath, myproject), recursive = TRUE)
   files_loc <- sapply(strsplit(myfiles, "/"), tail, n=1)
   allnode <- dbReadTable(d, "data_file")
   files_import <- myfiles[which(!files_loc %in% allnode$path)]
   write.csv(files_import, "files.csv")
-  failed2 <- lapply(files_import, get_files_import, conn=d, outpath=outpath)
+  failed2 <- lapply(files_import, get_files_import, conn=d, outpath=outpath, myproject=myproject)
   faul <- which(!sapply(failed2[[1]], is.null)) 
   if(length(faul) > 0) {
   failed2 <- Map(`[`, failed2, faul)
@@ -419,8 +426,8 @@ update_db <- function(d, outpath) {
     }
 }
 
-get_files_import <- function(e, conn, outpath) {
-  e <- file.path(outpath, e)
+get_files_import <- function(e, conn, outpath, myproject) {
+  e <- file.path(outpath, myproject, e)
   print(e)
   y <- tail(unlist(strsplit(e, "/")), n=1)
 
